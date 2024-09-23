@@ -226,10 +226,16 @@ else:
 wsm = get_realigned_ws_mapping_with_punctuation(wsm)
 ssm = get_sentences_speaker_mapping(wsm, speaker_ts)
 
-with open(f"{os.path.splitext(args.audio)[0]}.txt", "w", encoding="utf-8-sig") as f:
+# Save results
+base_name = os.path.splitext(os.path.basename(args.audio))[0]  # Get the file name without extension
+directory = os.path.dirname(args.audio)  # Get the directory of the audio file
+output_dir = f"results/{os.path.basename(directory)}"
+os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
+
+with open(os.path.join(output_dir, f"{base_name}.txt"), "w", encoding="utf-8-sig") as f:
     get_speaker_aware_transcript(ssm, f)
 
-with open(f"{os.path.splitext(args.audio)[0]}.srt", "w", encoding="utf-8-sig") as srt:
+with open(os.path.join(output_dir, f"{base_name}.str"), "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
 
-cleanup(temp_path)
+#cleanup(temp_path)

@@ -1,7 +1,12 @@
 #Data
 /data
+*/results
+.txt
+.str
 
-#Template for AL projects for Dynamics 365 Business Central
+__pycache__/
+temp_outputs/
+
 #launch.json folder
 .vscode/
 #Cache folder

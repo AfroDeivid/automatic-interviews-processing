@@ -21,10 +21,13 @@ Ensure that FFMPEG is added to your system’s PATH.
 After ensuring the prerequisites are set up, proceed with installing the necessary packages.
 
 `pip install cython`
+
 ``pip install -r requirements.txt``
 
 If you encounter issues with the ``huggingface_hub library``, uninstall the current version and install version 0.20.3:
+
 ``pip uninstall huggingface_hub``
+
 ``pip install huggingface-hub==0.20.3``
 
 
@@ -34,5 +37,9 @@ If you encounter issues with the ``huggingface_hub library``, uninstall the curr
 - python diarize.py -a "Id 13.m4a"
 
 ## Reinstall PyTorch with CUDA support
-pip uninstall torch --yes
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes
+``pip uninstall torch --yes``
+
+``conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes``
+
+
+(wd) PS C:\Users\david\Documents\GitHub\Meditation-Interviews\Whisper_Diarization> python diarize.py -a "..\data\OBE1\Id 15.m4a"
