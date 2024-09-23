@@ -2,7 +2,7 @@
 
 # Set-Up
 
-## 1. Create Python3.10 environment
+## 1. Create Environment
 
 `conda create --name NAME python=3.10`
 
