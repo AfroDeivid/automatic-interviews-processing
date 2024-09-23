@@ -12,7 +12,4 @@ conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 cpuonly -c py
 
 pip install git+https://github.com/m-bain/whisperx.git
 pip install ipykernel 
-
 pip install nvidia-<library>
-
-
