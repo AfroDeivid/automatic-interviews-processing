@@ -55,7 +55,7 @@ def main():
         "-e", "--extensions",
         type=str,
         nargs='+', # can give multiples argumens separate by an space
-        default=[".m4a","mp4","wav"],
+        default=[".m4a",".mp4",".wav"],
         help="List of allowed audio file extensions."
     )
 

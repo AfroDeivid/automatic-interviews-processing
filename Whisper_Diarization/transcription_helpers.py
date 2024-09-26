@@ -66,8 +66,9 @@ def transcribe_batched(
         device,
         compute_type=compute_dtype,
         asr_options={"suppress_numerals": suppress_numerals},
-    )
-    audio = whisperx.load_audio(audio_file)
+    ) # May need to add here: language=language
+
+    audio = whisperx.load_audio(audio_file) 
     result = whisper_model.transcribe(audio, language=language, batch_size=batch_size)
     del whisper_model
     torch.cuda.empty_cache()
