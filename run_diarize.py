@@ -12,7 +12,7 @@ def process_audio_file(audio_file, whisper_model, language):
 
     # Run the Python script
     subprocess.run([
-        "python", "Whisper_Diarization/diarize.py",
+        "python", "Whisper_Diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
         "--language", language
@@ -54,8 +54,8 @@ def main():
     parser.add_argument(
         "-e", "--extensions",
         type=str,
-        nargs='+',
-        default=[".m4a"],
+        nargs='+', # can give multiples argumens separate by an space
+        default=[".m4a","mp4","wav"],
         help="List of allowed audio file extensions."
     )
 
@@ -63,10 +63,10 @@ def main():
 
     # Get audio files
     audio_files = get_audio_files(args.directory, args.extensions)
-    print(args.directory)
-    print(audio_files)
-    print(args.extensions)
-    print(args.language)
+    print("Parse dir: ", args.directory)
+    print("Parse audio: ", audio_files)
+    print("Parse extensions: ", args.extensions)
+    print("Parse Language: ", args.language)
 
     # Process each audio file
     for audio_file in audio_files:

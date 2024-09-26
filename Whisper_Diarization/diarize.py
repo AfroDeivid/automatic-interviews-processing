@@ -111,7 +111,8 @@ else:
 
 
 # Transcribe the audio file
-print("Language: ",args.language)
+print("Language Whisper: ", args.language)
+print("Language Model: ", args.whisper_model)
 whisper_results, language, audio_waveform = transcribe_batched(
     vocal_target,
     args.language,
