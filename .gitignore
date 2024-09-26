@@ -4,6 +4,8 @@
 /results
 .txt
 .str
+.docx
+.csv
 
 __pycache__/
 temp_outputs/
