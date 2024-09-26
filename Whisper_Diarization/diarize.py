@@ -230,6 +230,8 @@ ssm = get_sentences_speaker_mapping(wsm, speaker_ts)
 base_name = os.path.splitext(os.path.basename(args.audio))[0]  # Get the file name without extension
 directory = os.path.dirname(args.audio)  # Get the directory of the audio file
 output_dir = f"results/{os.path.basename(directory)}"
+
+print(output_dir)
 os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
 with open(os.path.join(output_dir, f"{base_name}.txt"), "w", encoding="utf-8-sig") as f:
