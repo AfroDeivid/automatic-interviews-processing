@@ -2,10 +2,10 @@
 /data
 */results
 /results
-.txt
-.str
-.docx
-.csv
+*.txt
+*.str
+*.docx
+*.csv
 
 __pycache__/
 temp_outputs/
