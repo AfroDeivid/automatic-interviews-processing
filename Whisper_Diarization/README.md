@@ -22,7 +22,7 @@ After ensuring the prerequisites are set up, proceed with installing the necessa
 
 `pip install cython`
 
-``pip install -r requirements.txt``
+``pip install -r requirements.txt`` Important remeind to be in the good folder, maybe change then for def version pipeline
 
 If you encounter issues with the ``huggingface_hub library``, uninstall the current version and install version 0.20.3:
 
