@@ -26,8 +26,12 @@ def process_audio_file(audio_file, whisper_model, language):
 def get_audio_files(directory, extensions):
     """Get a list of audio files in the specified directory with given extensions."""
     audio_files = []
-    for ext in extensions:
-        audio_files.extend(os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(ext))
+
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if any(file.endswith(ext) for ext in extensions):
+                audio_files.append(os.path.join(root, file))
+                
     return audio_files
 
 def main():

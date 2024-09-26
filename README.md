@@ -17,4 +17,4 @@ seaborn
 pydub
 
 
-python run_diarize.py -d ".\data\OBE1" -e ".m4a" ".mp4" --whisper-model large-v3 --language en
+python run_diarize.py -d ".\data\OBE1" --whisper-model large-v3 --language en
