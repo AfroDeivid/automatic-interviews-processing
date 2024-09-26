@@ -24,4 +24,4 @@
 
 ``pip install git+https://github.com/m-bain/whisperx.git``
 
-``pip install ipykernel ``
+``pip install ipykernel``
