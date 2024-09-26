@@ -1,6 +1,6 @@
 # Set-Up
 
-## 1. Create Environment
+## 1. Create Environment (wd)
 
 `conda create --name NAME python=3.9` 
 
@@ -43,3 +43,7 @@ If you encounter issues with the ``huggingface_hub library``, uninstall the curr
 
 
 (wd) PS C:\Users\david\Documents\GitHub\Meditation-Interviews\Whisper_Diarization> python diarize.py -a "..\data\OBE1\Id 15.m4a"
+
+python diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en
+
+python Whisper_Diarization/diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en

@@ -10,12 +10,13 @@
 
 ## 2. CUDA or CPU
 
-- If CUDA
+- If CUDA (obecuda)
 
 `pip install ctranslate2`
 
 `conda install pytorch==2.0.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia`
-- If CPU only
+
+- If CPU only (obe)
 
 `conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 cpuonly -c pytorch`
 
