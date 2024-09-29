@@ -229,9 +229,12 @@ wsm = get_realigned_ws_mapping_with_punctuation(wsm)
 ssm = get_sentences_speaker_mapping(wsm, speaker_ts)
 
 # Save results
+
+base_input_directory = 'data' 
+
 base_name = os.path.splitext(os.path.basename(args.audio))[0]  # Get the file name without extension
-directory = os.path.dirname(args.audio)  # Get the directory of the audio file
-output_dir = f"results/{os.path.basename(directory)}"
+relative_path = os.path.relpath(args.audio, base_input_directory)  
+output_dir = os.path.join("results", os.path.dirname(relative_path)) 
 
 print("Output Dir:", output_dir)
 os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
