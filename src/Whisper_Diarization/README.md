@@ -22,7 +22,8 @@ After ensuring the prerequisites are set up, proceed with installing the necessa
 
 `pip install cython`
 
-``pip install -r requirements.txt`` Important remeind to be in the good folder, maybe change then for def version pipeline
+``pip install -r requirements.txt`` 
+Important to remind to be in the good folder, maybe change then for def version pipeline
 
 If you encounter issues with the ``huggingface_hub library``, uninstall the current version and install version 0.20.3:
 
@@ -31,27 +32,17 @@ pip uninstall huggingface_hub
 pip install huggingface-hub==0.20.3
 ``` 
 
-
-# Temporal para mi only
-
-- Changed python3 -> python
-- python diarize.py -a "Id 13.m4a"
-
-## Reinstall PyTorch with CUDA support !!! do it before requeriments
-```
-pip uninstall torch --yes
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes
-```
-
-
-
+# Example usage command
 
 
 (wd) PS C:\Users\david\Documents\GitHub\Meditation-Interviews\Whisper_Diarization> python diarize.py -a "..\data\OBE1\Id 15.m4a"
 
 python diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en
 
-# for cuda test
+
+# Temporal para mi only
+
+## for cuda test
 ```
 conda create --name wdcuda python=3.9 --yes
 conda activate wdcuda
@@ -61,4 +52,10 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvi
 pip install -r requirements.txt
 pip uninstall huggingface_hub --yes
 pip install huggingface-hub==0.20.3
+```
+
+- Reinstall PyTorch with CUDA support !!! do it before requeriments
+```
+pip uninstall torch --yes
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes
 ```

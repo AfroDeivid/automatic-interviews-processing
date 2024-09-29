@@ -12,7 +12,7 @@ def process_audio_file(audio_file, whisper_model, language):
 
     # Run the Python script
     subprocess.run([
-        "python", "Whisper_Diarization\diarize.py",
+        "python", "src\Whisper_Diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
         "--language", language
@@ -21,7 +21,7 @@ def process_audio_file(audio_file, whisper_model, language):
     # End the timer
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"Finished processing {audio_file} in {elapsed_time:.2f} seconds")
+    print(f"Finished processing {audio_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60} sec")
 
 def get_audio_files(directory, extensions):
     """Get a list of audio files in the specified directory with given extensions."""
