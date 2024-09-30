@@ -1,10 +1,13 @@
+# Whisper Diarization
+
 # Set-Up
 
-## 1. Create Environment (wd)
+## 1. Create Environment
 
-`conda create --name NAME python=3.9` 
-
-`conda activate NAME`
+```
+conda create --name wd python=3.9 --yes
+conda activate wd
+```
 
 ## 2. Prerequisite Installations
  This section outlines the essential tools and libraries that need to be installed before proceeding with the main package installations.
@@ -20,29 +23,23 @@ Ensure that FFMPEG is added to your system’s PATH.
 
 After ensuring the prerequisites are set up, proceed with installing the necessary packages.
 
-`pip install cython`
-
-``pip install -r requirements.txt`` 
-Important to remind to be in the good folder, maybe change then for def version pipeline
-
-If you encounter issues with the ``huggingface_hub library``, uninstall the current version and install version 0.20.3:
+Run the following comand inside the *Whisper_Diarization* folder.
 
 ```
+pip install cython
+pip install ipykernel
+pip install -r requirements.txt
 pip uninstall huggingface_hub
 pip install huggingface-hub==0.20.3
 ``` 
 
-# Example usage command
+# How to use
 
+```
+python Whisper_Diariazation\diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en
+```
 
-(wd) PS C:\Users\david\Documents\GitHub\Meditation-Interviews\Whisper_Diarization> python diarize.py -a "..\data\OBE1\Id 15.m4a"
-
-python diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en
-
-
-# Temporal para mi only
-
-## for cuda test
+# Allow CUDA use (TO-DO)
 ```
 conda create --name wdcuda python=3.9 --yes
 conda activate wdcuda
@@ -52,10 +49,4 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvi
 pip install -r requirements.txt
 pip uninstall huggingface_hub --yes
 pip install huggingface-hub==0.20.3
-```
-
-- Reinstall PyTorch with CUDA support !!! do it before requeriments
-```
-pip uninstall torch --yes
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes
 ```

@@ -1,20 +1,31 @@
 # Meditation-Interviews
 
-# Set-Up for raw analysis
+# run_diarize.py
 
-## 1. Create Environment (raw)
+conda activate wd
 
-`conda create --name NAME python=3.9` 
-
-`conda activate NAME`
-
-`pip install pandas`
-
-`pip install ipykernel`
-
-matplotlib
-seaborn
-pydub
-
-
+```bash
 python run_diarize.py -d ".\data\OBE1" --whisper-model large-v3 --language en
+```
+
+# run_translation
+
+conda activate seam
+
+- **With CUDA (default):**
+
+```bash
+python run_translation.py -d "path_to_your_directory" --type "word" --source-lang fra --target-lang eng 
+```
+
+- **With CPU:**
+
+```bash
+python run_translation.py -d ".\data\Parkinson\fr" --type "word" --source-lang fra --target-lang eng --use-cpu
+```
+
+- **Without Translation:**
+
+```bash
+python run_translation.py -d ".\data\Parkinson\en" --type "word" --no-translate
+```

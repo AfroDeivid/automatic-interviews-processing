@@ -5,45 +5,51 @@ import os
 import torch
 from tqdm import tqdm
 
-# Function to read the Word document and extract Dialogue & Speaker
+# Function to read the Word document and extract dialogue
 def extract_dialogue_from_docx(docx_file):
-    # Load the Word document
+    separator = ":"
+    known_speakers = set()
+
     doc = docx.Document(docx_file)
     dialogues = []
-    current_text = []
-    
+    last_speaker = None
+
     # Loop through each paragraph in the document
     for paragraph in doc.paragraphs:
         text = unicodedata.normalize('NFKD', paragraph.text.strip())
 
-        # Only look after the separator after encountering an empty line
-        # Allow to handle with the combination of a line break and separator within the text at the same time !
+        # Ignore empty lines
         if not text:
-            # If there's accumulated text, check for the separator and save the dialogue
-            if current_text:
-                combined_text = ' '.join(current_text).strip()
-                if " : " in combined_text:
-                    # Only look at the first separator, to avoid separator within the text
-                    parts = combined_text.split(" : ", 1)
-                    if len(parts) == 2:
-                        speaker = parts[0].strip()
-                        dialogue_text = parts[1].strip()
-                        dialogues.append({"Speaker": speaker, "Text": dialogue_text})
-                current_text = []
             continue
 
-        # Accumulate text for the current speaker
-        current_text.append(text)
+        # Check if the paragraph contains the separator (indicating dialogue)
+        if separator in text:
+            # Split speaker and text based on the delimiter
+            parts = text.split(separator, 1)
 
-    # Add the last accumulated dialogue
-    if current_text:
-        combined_text = ' '.join(current_text).strip()
-        if " : " in combined_text:
-            parts = combined_text.split(" : ", 1)
             if len(parts) == 2:
                 speaker = parts[0].strip()
                 dialogue_text = parts[1].strip()
+
+                # Check if the speaker's name consists of more than one word
+                if len(speaker.split()) > 1 and speaker not in known_speakers:
+                    print(f"Warning: The speaker '{speaker}' has more than one word. This might be an error.")
+                    user_input = input(f"Do you recognize this speaker '{speaker}'? (yes/no): ").strip().lower()
+                    if user_input == "yes":
+                        known_speakers.add(speaker)
+                        print("Thanks! We set this speaker as valid name.")
+                    elif user_input == "no" and last_speaker:
+                        # Reassign the text to the previous speaker
+                        dialogues[-1]["Text"] += " " + text
+                        print("Thanks! Therefore we assing this text to the previous speaker.")
+                        continue
+
                 dialogues.append({"Speaker": speaker, "Text": dialogue_text})
+                last_speaker = speaker
+        else:
+            # If no separator, assume it belongs to the last speaker
+            if last_speaker:
+                dialogues[-1]["Text"] += " " + text
 
     return dialogues
 
@@ -57,12 +63,14 @@ def save_to_csv(data, output_file):
         writer = csv.DictWriter(file, fieldnames=["Speaker", "Text"])
         writer.writeheader()
         for row in data:
+            # Replace newline characters with spaces
+            row["Text"] = row["Text"].replace('\n',' ')
             writer.writerow(row)
 
 
-def translation(source_lang, target_lang, text, model, processor, cuda = False):
+def translation(source_lang, target_lang, text, model, processor, use_cuda = True):
 
-    if cuda:
+    if use_cuda:
         text_inputs = processor(text, return_tensors="pt", src_lang=source_lang).to("cuda")
     else:
         text_inputs = processor(text, return_tensors="pt", src_lang=source_lang)
@@ -73,12 +81,11 @@ def translation(source_lang, target_lang, text, model, processor, cuda = False):
     return translated_text
 
 # CSV translation function with line-by-line saving
-def translate_csv(input_csv, source_lang, target_lang, model, processor, cuda = False):
+def translate_csv(input_csv, source_lang, target_lang, model, processor, use_cuda = True):
     encoding = 'utf-8'
     output_csv = f"{os.path.splitext(input_csv)[0]}_{target_lang}.csv"
 
-    if cuda and torch.cuda.is_available():
-        cuda = True
+    use_cuda = use_cuda and torch.cuda.is_available()
 
     # Count the number of rows already processed in the output file
     processed_rows = 0
@@ -112,7 +119,7 @@ def translate_csv(input_csv, source_lang, target_lang, model, processor, cuda = 
                 text = row["Text"]
 
                 # Translate the text
-                translated_text = translation(source_lang, target_lang, text, model, processor, cuda)
+                translated_text = translation(source_lang, target_lang, text, model, processor, use_cuda)
 
                 # Write the speaker and translated text to the new CSV file immediately
                 writer.writerow({"Speaker": speaker, "Translated_Text": translated_text})
