@@ -3,6 +3,12 @@ import subprocess
 import time
 import argparse
 
+import sys
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(src_path)
+
+from format_helpers import get_audio_files, convert_str_to_csv
+
 def process_audio_file(audio_file, whisper_model, language):
     """Process a single audio file with the diarization script."""
     print(f"Processing {audio_file}...")
@@ -23,16 +29,16 @@ def process_audio_file(audio_file, whisper_model, language):
     elapsed_time = end_time - start_time
     print(f"Finished processing {audio_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60:.0f} sec")
 
-def get_audio_files(directory, extensions):
-    """Get a list of audio files in the specified directory with given extensions."""
-    audio_files = []
+    # Convert .str file to .csv format
+    base_input_directory = 'data'
+    relative_path = os.path.relpath(audio_file, base_input_directory)  
+    str_dir = os.path.join("results", os.path.dirname(relative_path)) 
+    #print(".str Dir:", str_dir)
+    base_name = os.path.splitext(os.path.basename(audio_file))[0]  # Get the file name without extension
+    str_file = os.path.join(str_dir,f"{base_name}.str")
 
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if any(file.endswith(ext) for ext in extensions):
-                audio_files.append(os.path.join(root, file))
-                
-    return audio_files
+    convert_str_to_csv(str_file, str_dir)
+
 
 def main():
     # Set up argument parser

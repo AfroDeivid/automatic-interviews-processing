@@ -11,3 +11,5 @@
 matplotlib
 seaborn
 pydub
+
+conda install nltk --yes
