@@ -5,24 +5,11 @@ import torch
 from transformers import SeamlessM4Tv2ForTextToText, AutoProcessor
 
 import sys
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src", "Translation"))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(src_path)
 
-from translation_helpers import extract_dialogue_from_docx, save_to_csv, translate_csv
-
-def convert_word_to_csv(word_file):
-    """Convert a single Word  to a CSV file."""
-    print(f"Converting {word_file} to CSV...")
-
-    # Extract dialogues from the Word file
-    dialogues = extract_dialogue_from_docx(word_file)
-
-    # Save dialogues to a CSV file
-    csv_file = f"csv/{os.path.splitext(os.path.basename(word_file))[0]}.csv"
-    save_to_csv(dialogues, csv_file)
-
-    print(f"Successfully converted {word_file} to {csv_file}")
-    return csv_file
+from translation.translation_helpers import docx_to_csv, translate_csv
+from format_helpers import get_files
 
 def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use_cuda):
     """Translate a single CSV file."""
@@ -39,17 +26,6 @@ def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use
     elapsed_time = end_time - start_time
     print(f"Finished translating {csv_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60:.0f} sec")
 
-def get_files(directory, extensions):
-    """Get a list of files in the specified directory with given extensions."""
-    files = []
-
-    for root, dirs, files_in_dir in os.walk(directory):
-        for file in files_in_dir:
-            if any(file.endswith(ext) for ext in extensions):
-                files.append(os.path.join(root, file))
-                
-    return files
-
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Process files for translation.")
@@ -62,9 +38,9 @@ def main():
     parser.add_argument(
         "--type",
         type=str,
-        choices=["word", "csv"],
+        choices=["docx", "csv"],
         required=True,
-        help="Type of source files: 'word' to convert Word files (.docx) to CSV and optionally translate, 'csv' to translate existing CSV files."
+        help="Type of source files: 'docx' to convert Word type files to CSV and optionally translate ; 'csv' to translate existing CSV files."
     )
     parser.add_argument(
         "--source-lang",
@@ -94,11 +70,10 @@ def main():
     # Determine whether to use CUDA or CPU
     use_cuda = not args.use_cpu and torch.cuda.is_available()
 
-    # Load the model and processor if translation is not skipped
+    # Load the model and processor if we perform translation, if not skip this step
     if not args.no_translate:
         model = SeamlessM4Tv2ForTextToText.from_pretrained("facebook/seamless-m4t-v2-large")
         processor = AutoProcessor.from_pretrained("facebook/seamless-m4t-v2-large")
-
         if use_cuda:
             model = model.to("cuda")
     else:
@@ -108,13 +83,16 @@ def main():
 
     csv_files = []
 
-    # Step 1: Convert Word files to CSV if type is 'word'
-    if args.type == "word":
+    # Step 1: Convert Word files to CSV if type is 'docx', otherwise get CSV files
+    if args.type == "docx":
         files = get_files(args.directory, [".docx"])
+        print(files)
         for word_file in files:
-            csv_file = convert_word_to_csv(word_file)
-            if csv_file:
-                csv_files.append(csv_file)
+
+            print(f"Converting {word_file} to CSV...")
+            csv_file = docx_to_csv(word_file)
+            print(f"Successfully converted {word_file} to {csv_file} \n")
+            csv_files.append(csv_file)
 
     elif args.type == "csv":
         csv_files = get_files(args.directory, [".csv"])
@@ -123,9 +101,10 @@ def main():
     print("Type: ", args.type)
     print("Parsed files: ", files)
     print("No translation: ", args.no_translate)
-    print("Parsed source language: ", args.source_lang)
-    print("Parsed target language: ", args.target_lang)
-    print("Use CUDA: ", use_cuda)
+    if not args.no_translate:
+        print("Parsed source language: ", args.source_lang)
+        print("Parsed target language: ", args.target_lang)
+        print("Use CUDA: ", use_cuda)
     
     # Step 2: Translate CSV files if translation is not skipped
     if not args.no_translate:

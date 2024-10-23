@@ -245,4 +245,4 @@ with open(os.path.join(output_dir, f"{base_name}.txt"), "w", encoding="utf-8-sig
 with open(os.path.join(output_dir, f"{base_name}.str"), "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
 
-#cleanup(temp_path)
+cleanup(temp_path)

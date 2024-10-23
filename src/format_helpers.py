@@ -3,15 +3,16 @@ import re
 import csv
 
 
-def get_audio_files(directory, extensions):
-    """Get a list of audio files in the specified directory and its subdirectories with given extensions."""
-    audio_files = []
+def get_files(directory, extensions):
+    """Get a list of files in the specified directory and its subdirectories with given extensions."""
+    files = []
 
-    for root, dirs, files in os.walk(directory):
-        for file in files:
+    for root, dirs, files_in_dir in os.walk(directory):
+        for file in files_in_dir:
             if any(file.endswith(ext) for ext in extensions):
-                audio_files.append(os.path.join(root, file))
-    return audio_files
+                files.append(os.path.join(root, file))
+                
+    return files
 
 
 def extract_id(name):

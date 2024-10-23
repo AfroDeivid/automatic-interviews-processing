@@ -7,7 +7,7 @@ import sys
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(src_path)
 
-from format_helpers import get_audio_files, convert_str_to_csv
+from format_helpers import get_files, convert_str_to_csv
 
 def process_audio_file(audio_file, whisper_model, language):
     """Process a single audio file with the diarization script."""
@@ -18,7 +18,7 @@ def process_audio_file(audio_file, whisper_model, language):
 
     # Run the Python script
     subprocess.run([
-        "python", "src\Whisper_Diarization\diarize.py",
+        "python", "src\whisper_diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
         "--language", language
@@ -72,7 +72,7 @@ def main():
     args = parser.parse_args()
 
     # Get audio files
-    audio_files = get_audio_files(args.directory, args.extensions)
+    audio_files = get_files(args.directory, args.extensions)
     print("Parse dir: ", args.directory)
     print("Parse audio: ", audio_files)
     print("Parse extensions: ", args.extensions)

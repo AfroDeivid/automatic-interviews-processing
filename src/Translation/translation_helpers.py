@@ -53,19 +53,27 @@ def extract_dialogue_from_docx(docx_file):
 
     return dialogues
 
-# Function to save the extracted dialogue to a CSV file
-def save_to_csv(data, output_file):
-    
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+def docx_to_csv(docx_file, output_directory="results", data_directory="data"):
 
-    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
+    dialogues = extract_dialogue_from_docx(docx_file)
+
+    # Save the extracted dialogues to a CSV file
+    base_name = os.path.splitext(os.path.basename(docx_file))[0] # Get the file name without extension
+    relative_path = os.path.relpath(docx_file, data_directory)  
+    directory = os.path.join(output_directory, os.path.dirname(relative_path))
+    csv_file = os.path.join(directory, f"{base_name}.csv")
+
+    os.makedirs(os.path.dirname(csv_file), exist_ok=True)
+
+    with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=["Speaker", "Text"])
         writer.writeheader()
-        for row in data:
+        for row in dialogues:
             # Replace newline characters with spaces
             row["Text"] = row["Text"].replace('\n',' ')
             writer.writerow(row)
+
+    return csv_file
 
 
 def translation(source_lang, target_lang, text, model, processor, use_cuda = True):
