@@ -6,6 +6,7 @@
 *.srt
 *.docx
 *.csv
+*.html
 
 __pycache__/
 temp_outputs/

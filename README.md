@@ -36,6 +36,7 @@ python run_translation.py -d ".\data\Parkinson\en" --type "docx" --no-translate
 Select an entire row: "Shift" + "Space"
 Select an entire column: "Ctrl" + "Space"
 Insert a new row: "Ctrl" + "+" (below the actual row)
+Enter a cell wihout overide: "F2"
 
 Copy paste a row and inserted below: 
 - "Shift" + "Space"
