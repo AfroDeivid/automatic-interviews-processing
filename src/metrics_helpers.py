@@ -9,8 +9,6 @@ import csv
 #nltk.download('punkt_tab')
 from nltk.tokenize import word_tokenize
 
-from format_helpers import get_files
-
 # WER metrics performance
 
 def flatten_csv_content(file_path):
@@ -200,7 +198,7 @@ def calculate_wer_and_generate_html(prediction_file, reference_file, output_file
 
 # TODO: Add the diarisation metric and visualisation
 
-def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual comparison'):
+def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual comparison',info =None):
     """
     Process all CSV files in the prediction folder, compare with matching files in the reference folder,
     calculate WER and Diarization metrics, generate HTML visual files, and save metrics to a CSV file.
@@ -228,8 +226,9 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
             reference_file = os.path.join(reference_folder, filename)
             if os.path.exists(prediction_file):
                 # Define the output HTML file path
-                wer_output_file = os.path.join(visual_comparison_folder, f'WER_{os.path.splitext(filename)[0]}.html')
-                dia_output_file = os.path.join(visual_comparison_folder, f'Diarization_{os.path.splitext(filename)[0]}.html')
+                base_name = os.path.splitext(filename)[0]
+                wer_output_file = os.path.join(visual_comparison_folder, f'WER_{base_name}.html')
+                dia_output_file = os.path.join(visual_comparison_folder, f'Diarization_{base_name}.html')
 
                 # Call the function to calculate WER and generate HTML
                 wer_metrics = calculate_wer_and_generate_html(
@@ -240,26 +239,32 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
                     tolerance_replace=tolerance_replace
                 )
 
+                if info is not None:
+                    ref_duration = info[info["File_name"] == base_name]["Duration_sec"].values[0]
+                else:
+                    ref_duration = None
+                    
                 # Call the function to generate Diarization HTML and get Diarization metrics
                 dia_metrics = diarisation_html(
                     reference_file,
                     prediction_file,
-                    dia_output_file
+                    dia_output_file,
+                    info_ref = ref_duration
                 )
 
                 # Combine WER and Diarization metrics
                 combined_metrics = {
                     'Filename': filename,
-                    'WER': wer_metrics.get('WER', 0.0),
-                    'DER': dia_metrics.get('DER', 0.0),
-                    'Total Words': wer_metrics.get('Total Words', 0),
-                    'Deletions': wer_metrics.get('Deletions', 0),
-                    'Insertions': wer_metrics.get('Insertions', 0),
-                    'Substitutions': wer_metrics.get('Substitutions', 0),
-                    'Reference Speech Duration': dia_metrics.get('Reference Speech Duration', 0.0),
-                    'Missed Duration': dia_metrics.get('Missed Duration', 0.0),
-                    'False Alarm Duration': dia_metrics.get('False Alarm Duration', 0.0),
-                    'Confusion Duration': dia_metrics.get('Confusion Duration', 0.0)
+                    'WER': wer_metrics.get('WER'),
+                    'DER': dia_metrics.get('DER'),
+                    'Total Words': wer_metrics.get('Total Words'),
+                    'Deletions': wer_metrics.get('Deletions'),
+                    'Insertions': wer_metrics.get('Insertions'),
+                    'Substitutions': wer_metrics.get('Substitutions'),
+                    'Reference Speech Duration': dia_metrics.get('Reference Speech Duration'),
+                    'Missed Duration': dia_metrics.get('Missed Duration'),
+                    'False Alarm Duration': dia_metrics.get('False Alarm Duration'),
+                    'Confusion Duration': dia_metrics.get('Confusion Duration')
                 }
 
                 # Append combined metrics to the list
@@ -336,7 +341,7 @@ def get_active_speakers(df, start_time, end_time):
     active_speakers = df.loc[mask, 'Speaker'].unique()
     return set(map(str, active_speakers))
 
-def compute_der(df_ref, df_pred):
+def compute_der(df_ref, df_pred, total_ref_duration=None):
     """
     Compute the Diarization Error Rate (DER) and error durations, excluding silence periods
     where neither reference nor prediction has active speakers.
@@ -385,15 +390,20 @@ def compute_der(df_ref, df_pred):
             'Error Type': error_type
         })
 
+    if total_ref_duration is not None: # As we only have the min and max time detected by the model, therefore worst case scenario
+        print(f"Previous calculated Reference Duration: {total_ref_speech_duration}")
+        total_ref_speech_duration = total_ref_duration
+        print(f"New Reference Duration: {total_ref_speech_duration}")
+
     total_error_duration = total_missed_duration + total_false_alarm_duration + total_confusion_duration
     DER = (total_error_duration / total_ref_speech_duration) if total_ref_speech_duration > 0 else 0.0
 
     error_durations = {
-        'DER': DER,
-        'Reference Speech Duration': total_ref_speech_duration,
-        'Missed Duration': total_missed_duration,
-        'False Alarm Duration': total_false_alarm_duration,
-        'Confusion Duration': total_confusion_duration
+        'DER': round(DER, 4),
+        'Reference Speech Duration': round(total_ref_speech_duration,4),
+        'Missed Duration': round(total_missed_duration,4),
+        'False Alarm Duration': round(total_false_alarm_duration,4),
+        'Confusion Duration': round(total_confusion_duration,4)
     }
 
     dialogue_df = pd.DataFrame(dialogue_data)
@@ -507,7 +517,7 @@ def format_cell_diff(ref_value, pred_value):
         # No change
         return f"<td>{ref_value}</td>"
 
-def diarisation_html(reference_file, prediction_file, output_file):
+def diarisation_html(reference_file, prediction_file, output_file, info_ref=None):
     """
     Compare two CSV files and generate an HTML output highlighting the differences,
     including the dialogue DataFrame and diarization metrics.
@@ -534,7 +544,7 @@ def diarisation_html(reference_file, prediction_file, output_file):
     aligned_pairs = align_rows_by_time(df_ref, df_pred)
 
     # Compute DER and get dialogue DataFrame
-    dialogue_df, error_durations = compute_der(df_ref, df_pred)
+    dialogue_df, error_durations = compute_der(df_ref, df_pred, total_ref_duration= info_ref)
 
     # Prepare HTML output
     html_output = "<html><head><style>"
