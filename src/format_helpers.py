@@ -23,7 +23,7 @@ def extract_id(name):
 
     return participant_id
 
-def convert_str_to_csv(str_file, directory):
+def convert_str_to_csv(str_file, directory='Not Specified'):
     """Convert a single .str file to a CSV file."""
     csv_file = os.path.splitext(str_file)[0] + '.csv'
 
@@ -35,7 +35,8 @@ def convert_str_to_csv(str_file, directory):
     matches = pattern.findall(content)
 
     # Write to CSV
-    with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+    with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile: # encoding='utf-8-sig' to add BOM signature and being recognized as UTF-8 format by Excel
+                                                                       # One possible solution to handle special characters in Excel but might create others conflicts
         fieldnames = ['Experiment', 'File Name', 'Id', 'Start Time', 'End Time', 'Speaker', 'Content']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)#, quoting=csv.QUOTE_ALL)
 

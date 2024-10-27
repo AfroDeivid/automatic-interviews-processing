@@ -198,7 +198,7 @@ def calculate_wer_and_generate_html(prediction_file, reference_file, output_file
 
 # TODO: Add the diarisation metric and visualisation
 
-def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual comparison',info =None):
+def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual_comparison',info =None):
     """
     Process all CSV files in the prediction folder, compare with matching files in the reference folder,
     calculate WER and Diarization metrics, generate HTML visual files, and save metrics to a CSV file.
@@ -225,10 +225,11 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
             prediction_file = os.path.join(prediction_folder, filename)
             reference_file = os.path.join(reference_folder, filename)
             if os.path.exists(prediction_file):
+                print(f"Processing file: {filename}")
                 # Define the output HTML file path
                 base_name = os.path.splitext(filename)[0]
-                wer_output_file = os.path.join(visual_comparison_folder, f'WER_{base_name}.html')
-                dia_output_file = os.path.join(visual_comparison_folder, f'Diarization_{base_name}.html')
+                wer_output_file = os.path.join(visual_comparison_folder, f'{base_name}_WER.html')
+                dia_output_file = os.path.join(visual_comparison_folder, f'{base_name}_Diarization.html')
 
                 # Call the function to calculate WER and generate HTML
                 wer_metrics = calculate_wer_and_generate_html(
@@ -391,9 +392,9 @@ def compute_der(df_ref, df_pred, total_ref_duration=None):
         })
 
     if total_ref_duration is not None: # As we only have the min and max time detected by the model, therefore worst case scenario
-        print(f"Previous calculated Reference Duration: {total_ref_speech_duration}")
+        #print(f"Previous calculated Reference Duration: {total_ref_speech_duration}")
         total_ref_speech_duration = total_ref_duration
-        print(f"New Reference Duration: {total_ref_speech_duration}")
+        #print(f"New Reference Duration: {total_ref_speech_duration}")
 
     total_error_duration = total_missed_duration + total_false_alarm_duration + total_confusion_duration
     DER = (total_error_duration / total_ref_speech_duration) if total_ref_speech_duration > 0 else 0.0
@@ -479,6 +480,10 @@ def format_diff(ref_text, hyp_text):
     """
     Format differences between reference and hypothesis texts for HTML display.
     """
+    # Replace non-string inputs with empty strings
+    ref_text = ref_text if isinstance(ref_text, str) else ""
+    hyp_text = hyp_text if isinstance(hyp_text, str) else ""
+
     ref_words = ref_text.split()
     hyp_words = hyp_text.split()
     sm = difflib.SequenceMatcher(None, hyp_words, ref_words) # Highlight the changes needed in the prediction to match the reference

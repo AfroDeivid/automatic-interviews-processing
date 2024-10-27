@@ -3,10 +3,13 @@
 */results
 /results
 *.txt
-*.srt
+*.str
 *.docx
 *.csv
 *.html
+*.m4a
+*.mp4
+*.waw
 
 __pycache__/
 temp_outputs/
