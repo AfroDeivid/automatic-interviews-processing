@@ -10,6 +10,7 @@
 *.m4a
 *.mp4
 *.waw
+raw_data.xlsx
 
 __pycache__/
 temp_outputs/
