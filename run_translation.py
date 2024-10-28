@@ -4,12 +4,12 @@ import time
 import torch
 from transformers import SeamlessM4Tv2ForTextToText, AutoProcessor
 
-import sys
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
-sys.path.append(src_path)
+#import sys
+#src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
+#sys.path.append(src_path)
 
-from translation.translation_helpers import docx_to_csv, translate_csv
-from format_helpers import get_files
+from src.translation.translation_helpers import docx_to_csv, translate_csv
+from src.format_helpers import get_files
 
 def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use_cuda):
     """Translate a single CSV file."""

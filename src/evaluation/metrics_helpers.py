@@ -196,8 +196,6 @@ def calculate_wer_and_generate_html(prediction_file, reference_file, output_file
 
     return metrics
 
-# TODO: Add the diarisation metric and visualisation
-
 def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual_comparison',info =None):
     """
     Process all CSV files in the prediction folder, compare with matching files in the reference folder,

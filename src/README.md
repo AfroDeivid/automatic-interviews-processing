@@ -13,3 +13,12 @@ seaborn
 pydub
 
 conda install nltk --yes
+
+
+
+# LLAMA
+
+conda create --name llama python=3.10 --yes
+>> conda activate llama
+
+pip install ollama

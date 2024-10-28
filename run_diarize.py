@@ -3,11 +3,11 @@ import subprocess
 import time
 import argparse
 
-import sys
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
-sys.path.append(src_path)
+#import sys
+#src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
+#sys.path.append(src_path)
 
-from format_helpers import get_files, convert_str_to_csv
+from src.format_helpers import get_files, convert_str_to_csv
 
 def process_audio_file(audio_file, whisper_model, language):
     """Process a single audio file with the diarization script."""
