@@ -14,6 +14,7 @@ pip install pydub
 pip install matplotlib
 pip install seaborn
 pip install nltk
+pip install openpyxl
 ```
 
 
