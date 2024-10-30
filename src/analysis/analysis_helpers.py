@@ -58,6 +58,8 @@ def simpler_clean(text, filler_words = None):
     if filler_words :
         filler_words_pattern = r'\b(' + '|'.join(map(re.escape, filler_words)) + r')\b'
         text = re.sub(filler_words_pattern, '', text, flags=re.IGNORECASE)
+    # If there is "-" alone after removing of filler words, remove it
+    text = re.sub(r'\b-\b', '', text)
 
     # If there is two words which repeat consecutively, remove one of them (ignoring case)
     text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text, flags=re.IGNORECASE)
@@ -79,6 +81,8 @@ def simpler_clean(text, filler_words = None):
     # Put a point at the end of the text if there isn't a punctuation mark
     if text[-1] not in ['.', '!', '?']:
         text += '.'
+    # Put a space between words and punctuation marks other than " . "
+    text = re.sub(r'(\w)([!?])', r'\1 \2', text)
         
     return text
 
@@ -102,14 +106,14 @@ def clean_files(raw_folder, destination_folder, fillers_words= None, roles=False
                     # Remove rows with None values
                     data = data.dropna(subset=['Content'])
                 if roles:
-                    df_role, _ = assign_roles(data)
+                    df_role, _ = assign_roles(data, file_name=file)
                     data["Speaker"] = df_role["Role"]
                 if text_format:
                     convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
                 else:
                     data.to_csv(destination_file_path, index=False)
 
-def assign_roles(data):
+def assign_roles(data, file_name= None):
     """
     Assigns roles to speakers in the DataFrame based on participant and interviewer scores.
     
@@ -128,11 +132,17 @@ def assign_roles(data):
 
     interviewer_patterns = ['your', 'yours', 'yourself', # Second person pronouns
                             "could you", "can you", "would you", "do you", "please", "mind if I record",  # Common interviewer phrases
-                            "question", "how" ,"?"] # Questions
+                            "question", "how"] # Questions
     
     participant_patterns = r'\b(' + '|'.join(map(re.escape, participant_patterns)) + r')\b'
     interviewer_patterns = r'\b(' + '|'.join(map(re.escape, interviewer_patterns)) + r')\b'
     
+
+    # '?' does not have word boundaries like words do, so it won't be matched by patterns with \b.
+    # So we handle it separately
+    question_mark_weight = 1  # Default weight for '?'
+
+
     # Initialize a dictionary to store scores
     scores = {}
     
@@ -141,6 +151,11 @@ def assign_roles(data):
         speaker_texts = df[df['Speaker'] == speaker]['Content']
         participant_score = speaker_texts.str.count(participant_patterns, flags=re.IGNORECASE).sum()
         interviewer_score = speaker_texts.str.count(interviewer_patterns, flags=re.IGNORECASE).sum()
+
+        # Add weighted '?' counts to interviewer score
+        question_count = speaker_texts.str.count(r'\?').sum() * question_mark_weight
+        interviewer_score += question_count
+
         scores[speaker] = {
             'participant_score': participant_score,
             'interviewer_score': interviewer_score
@@ -152,6 +167,7 @@ def assign_roles(data):
     # Calculate score ratios
     scores_df['participant_ratio'] = scores_df['participant_score'] / (scores_df['interviewer_score'] + 1e-6)
     scores_df['interviewer_ratio'] = scores_df['interviewer_score'] / (scores_df['participant_score'] + 1e-6)
+    scores_df['score_diff'] = scores_df['participant_score'] - scores_df['interviewer_score']
     
     # Initialize role assignments
     scores_df['Role'] = 'Unassigned'
@@ -162,24 +178,28 @@ def assign_roles(data):
     role_dict = {}
     if not potential_participants.empty:
         # Select the speaker with the highest difference in participant score
-        participant_speaker = potential_participants.assign(
-            score_diff=potential_participants['participant_score'] - potential_participants['interviewer_score']
-        ).sort_values(by='score_diff', ascending=False).iloc[0]['Speaker']
+        participant_speaker = potential_participants.sort_values(by='score_diff', ascending=False).iloc[0]['Speaker']
+    else:
+        # Calculate the score difference for all speakers and select the one with the highest difference
+        print(f"File '{file_name}': Couldn't accurately predict the most probable participant. Define the mosts probable interviewers and select by default the participant as a fallback.")
+        participant_speaker = scores_df.sort_values(by='score_diff', ascending=False).iloc[0]['Speaker']
         
-        # Assign roles
-        interviewer_count = 1
-        for speaker in scores_df['Speaker']:
-            if speaker == participant_speaker:
-                role_dict[speaker] = 'Participant'
-            else:
-                role_dict[speaker] = f'Interviewer {interviewer_count}'
-                interviewer_count += 1
+    # Assign roles
+    interviewer_count = 1
+    for speaker in scores_df['Speaker']:
+        if speaker == participant_speaker:
+            role_dict[speaker] = 'Participant'
+        else:
+            role_dict[speaker] = f'Interviewer {interviewer_count}'
+            interviewer_count += 1
     
     # Assign roles to scores_df
     scores_df['Role'] = scores_df['Speaker'].map(role_dict)
 
     # Map roles back to the original DataFrame
     df['Role'] = df['Speaker'].map(role_dict)
+
+    #print(f"File '{file_name}': {scores_df}")   
     
     return df, scores_df
 
