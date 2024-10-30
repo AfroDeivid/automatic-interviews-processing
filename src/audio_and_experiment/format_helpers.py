@@ -1,6 +1,8 @@
 import os
 import re
 import csv
+from pydub.utils import mediainfo
+import pandas as pd
 
 def get_files(directory, extensions):
     """Get a list of files in the specified directory and its subdirectories with given extensions."""
@@ -53,3 +55,33 @@ def convert_str_to_csv(str_file, directory='Not Specified'):
                 'Speaker': speaker,
                 'Content': text.replace('\n', '')
             })
+
+def analyze_audio_files(directories, extensions):
+    """Analyze audio files and collect their properties."""
+    data = []
+    for directory in directories:
+        audio_files = get_files(directory, extensions)
+        for audio_file in audio_files:
+            info = mediainfo(audio_file)
+
+            # Duration
+            duration = round(float(info['duration']), 2) if 'duration' in info else 0
+            duration_min, duration_sec = divmod(int(duration), 60)
+            duration_hr, duration_min = divmod(duration_min, 60)
+            duration_string = f"{duration_hr:02d}:{duration_min:02d}:{duration_sec:02d}" # Format as hh:mm:ss
+
+            # File name
+            name, ext = os.path.splitext(os.path.basename(audio_file))
+            
+            data.append({
+                'File_name': name,
+                "Format": ext,
+                "ID": extract_id(name),
+                'Duration': duration_string,
+                'Duration_sec': duration,
+                #"Duration_min": duration_min,
+                'Experiment': os.path.basename(directory),
+
+            })
+    
+    return pd.DataFrame(data)

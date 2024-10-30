@@ -3,10 +3,6 @@ import html
 import os
 import pandas as pd
 import csv
-
-# Run this once if not already installed
-#nltk.download('punkt') 
-#nltk.download('punkt_tab')
 from nltk.tokenize import word_tokenize
 
 # WER metrics performance

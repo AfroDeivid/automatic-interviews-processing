@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import shutil
 import re
+import csv
 
 
 def organize_csv_files_by_dir(source_dir, destination_dir):
@@ -62,20 +63,26 @@ def simpler_clean(text, filler_words = None):
     text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text, flags=re.IGNORECASE)
 
     ## Visual cleaning
+    # If there only spaces, return None
+    if text.isspace():
+        return None
     # Convert lowercase "i" to uppercase "I" when it stands alone
     text = re.sub(r'\bi\b', 'I', text)
     # Remove double spaces
     text = re.sub(r'\s+', ' ', text)
-    # If the firt character is a space, remove it
-    if text[0] == ' ':
-        text = text[1:]
+    # If there is empty spaces at the beginning or end of the text, remove them
+    text = text.strip()
     # If there is a point, put on upper case the next character
     text = re.sub(r'\.\s+(\w)', lambda x: x.group(0).upper(), text)
-
+    # Put the first character of the text on upper case
+    text = text[0].upper() + text[1:]
+    # Put a point at the end of the text if there isn't a punctuation mark
+    if text[-1] not in ['.', '!', '?']:
+        text += '.'
+        
     return text
 
-
-def clean_files(raw_folder, destination_folder, fillers_words):
+def clean_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False):
     for subdir, _, files in os.walk(raw_folder):
         for file in files:
             if file.endswith(".csv"):
@@ -92,5 +99,128 @@ def clean_files(raw_folder, destination_folder, fillers_words):
                 data = pd.read_csv(raw_file_path)
                 if fillers_words:
                     data['Content'] = data['Content'].apply(simpler_clean, args=(fillers_words,))
+                    # Remove rows with None values
+                    data = data.dropna(subset=['Content'])
+                if roles:
+                    df_role, _ = assign_roles(data)
+                    data["Speaker"] = df_role["Role"]
+                if text_format:
+                    convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
+                else:
+                    data.to_csv(destination_file_path, index=False)
 
-                data.to_csv(destination_file_path, index=False)
+def assign_roles(data):
+    """
+    Assigns roles to speakers in the DataFrame based on participant and interviewer scores.
+    
+    Args:
+    - df (pd.DataFrame): DataFrame containing 'Speaker' and 'Content' columns.
+    
+    Returns:
+    - pd.DataFrame: DataFrame with an added 'Role' column.
+    """
+
+    df = data.copy()
+
+    # Define regex patterns for participant and interviewer utterances
+    participant_patterns = ["I", "me", "my", "mine", "myself"] # First person pronouns
+                            
+
+    interviewer_patterns = ['your', 'yours', 'yourself', # Second person pronouns
+                            "could you", "can you", "would you", "do you", "please", "mind if I record",  # Common interviewer phrases
+                            "question", "how" ,"?"] # Questions
+    
+    participant_patterns = r'\b(' + '|'.join(map(re.escape, participant_patterns)) + r')\b'
+    interviewer_patterns = r'\b(' + '|'.join(map(re.escape, interviewer_patterns)) + r')\b'
+    
+    # Initialize a dictionary to store scores
+    scores = {}
+    
+    # Calculate scores for each speaker
+    for speaker in df['Speaker'].unique():
+        speaker_texts = df[df['Speaker'] == speaker]['Content']
+        participant_score = speaker_texts.str.count(participant_patterns, flags=re.IGNORECASE).sum()
+        interviewer_score = speaker_texts.str.count(interviewer_patterns, flags=re.IGNORECASE).sum()
+        scores[speaker] = {
+            'participant_score': participant_score,
+            'interviewer_score': interviewer_score
+        }
+    
+    # Convert scores to DataFrame for easier manipulation
+    scores_df = pd.DataFrame(scores).T.reset_index().rename(columns={'index': 'Speaker'})
+    
+    # Calculate score ratios
+    scores_df['participant_ratio'] = scores_df['participant_score'] / (scores_df['interviewer_score'] + 1e-6)
+    scores_df['interviewer_ratio'] = scores_df['interviewer_score'] / (scores_df['participant_score'] + 1e-6)
+    
+    # Initialize role assignments
+    scores_df['Role'] = 'Unassigned'
+    
+    # Identify potential participants
+    potential_participants = scores_df[scores_df['participant_ratio'] >= scores_df['interviewer_ratio']]
+    
+    role_dict = {}
+    if not potential_participants.empty:
+        # Select the speaker with the highest difference in participant score
+        participant_speaker = potential_participants.assign(
+            score_diff=potential_participants['participant_score'] - potential_participants['interviewer_score']
+        ).sort_values(by='score_diff', ascending=False).iloc[0]['Speaker']
+        
+        # Assign roles
+        interviewer_count = 1
+        for speaker in scores_df['Speaker']:
+            if speaker == participant_speaker:
+                role_dict[speaker] = 'Participant'
+            else:
+                role_dict[speaker] = f'Interviewer {interviewer_count}'
+                interviewer_count += 1
+    
+    # Assign roles to scores_df
+    scores_df['Role'] = scores_df['Speaker'].map(role_dict)
+
+    # Map roles back to the original DataFrame
+    df['Role'] = df['Speaker'].map(role_dict)
+    
+    return df, scores_df
+
+def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt):
+    """
+    Converts a CSV file to a dialogue-style text file with only Speaker and Content,
+    merging consecutive entries from the same speaker.
+
+    Args:
+        input_csv (str): Path to the input CSV file.
+        output_txt (str): Path to the output text file.
+    """
+    output_txt = os.path.splitext(output_txt)[0] + '.txt'
+    with open(input_csv, mode='r', encoding='utf-8') as csvfile, \
+            open(output_txt, mode='w', encoding='utf-8') as txtfile:
+        
+        reader = csv.DictReader(csvfile)
+        
+        previous_speaker = None
+        dialogue_buffer = ""
+        
+        for row in reader:
+            speaker = row.get('Speaker', 'Unknown').strip()
+            content = row.get('Content', '').strip()
+            
+            if not speaker or not content:
+                continue  # Skip rows with missing speaker or content
+            
+            if speaker == previous_speaker:
+                # Append to the existing dialogue buffer
+                dialogue_buffer += f" {content}"
+            else:
+                if previous_speaker is not None:
+                    dialogue_line = f"{previous_speaker}: {dialogue_buffer}\n\n"
+                    txtfile.write(dialogue_line)
+                
+                # Start a new dialogue buffer
+                previous_speaker = speaker
+                dialogue_buffer = content
+        
+        # Write the last dialogue buffer after the loop ends
+        if previous_speaker is not None and dialogue_buffer:
+            dialogue_line = f"{previous_speaker}: {dialogue_buffer}"
+            txtfile.write(dialogue_line)

@@ -1,24 +1,26 @@
-## 1. Create Environment (raw)
+# Basics analysis & use of this repo
+- audio_and_experiment
+- analyis
+- evaluation
 
-`conda create --name NAME python=3.9` 
+## Create env
 
-`conda activate NAME`
-
-`pip install pandas`
-
-`pip install ipykernel`
-
-matplotlib
-seaborn
-pydub
-
-conda install nltk --yes
-
+```
+conda create --name basic python=3.10 --yes
+conda activate basic
+pip install ipykernel
+pip install pandas
+pip install pydub
+pip install matplotlib
+pip install seaborn
+pip install nltk
+```
 
 
-# LLAMA
+# LLAMA (Deprecated)
 
+```
 conda create --name llama python=3.10 --yes
->> conda activate llama
-
+conda activate llama
 pip install ollama
+```

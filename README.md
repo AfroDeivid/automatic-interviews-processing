@@ -30,7 +30,6 @@ python run_translation.py -d ".\data\Parkinson\fr" --type "docx" --source-lang f
 python run_translation.py -d ".\data\Parkinson\en" --type "docx" --no-translate
 ```
 
-
 # Excel tip
 
 Select an entire row: "Shift" + "Space"
