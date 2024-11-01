@@ -85,7 +85,7 @@ def simpler_clean(text, filler_words = None):
         
     return text
 
-def clean_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False):
+def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False, conditions=None):
     for subdir, _, files in os.walk(raw_folder):
         for file in files:
             if file.endswith(".csv"):
@@ -109,8 +109,12 @@ def clean_files(raw_folder, destination_folder, fillers_words= None, roles=False
                     data["Speaker"] = df_role["Role"]
                 if text_format:
                     convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
-                else:
-                    data.to_csv(destination_file_path, index=False)
+                    continue
+                if conditions is not None:
+                    data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
+                    data["Order Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Order Condition"].values[0]
+                
+                data.to_csv(destination_file_path, index=False)
 
 def assign_roles(data, file_name= None):
     """

@@ -15,6 +15,12 @@ pip install matplotlib
 pip install seaborn
 pip install nltk
 pip install openpyxl
+
+for last visual venn & uniques words accros ID
+pip install matplotlib_venn
+pip install wordcloud
+pip install plotly
+conda install nbformat
 ```
 
 
