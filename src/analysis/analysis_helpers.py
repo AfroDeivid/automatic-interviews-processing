@@ -136,19 +136,31 @@ def stripplot(df,x_column,y_column, hue_column=None):
     plt.ylabel(y_column)
     plt.show()
 
-def stripplot_with_counts(df, x_column, y_column, hue_column=None, file_name=None):
-    # Set up the plot
-    sns.set(style="whitegrid")
+def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=None, legend_labels= None, file_name=None):
+
     plt.figure(figsize=(10, 6))
 
-    # Draw boxplot and stripplot
-    sns.boxplot(x=x_column, y=y_column, data=df, hue=hue_column)
-    sns.stripplot(x=x_column, y=y_column, data=df, hue=hue_column, linewidth=1, edgecolor="k",
-                  dodge=True, jitter=False, legend=False)
-    
+    # Draw boxplot
+    ax = sns.boxplot(x=x_column, y=y_column, data=df, hue=hue_column)
+
+    # Draw stripplot
+    strip = sns.stripplot(x=x_column, y=y_column, data=df, hue=hue_column, linewidth=1, edgecolor="k",
+                          dodge=True, jitter=True, legend=False)
+
     # Extend y-limits to include space for counts
     y_min, y_max = plt.ylim()
-    plt.ylim(y_min - 50 , y_max)
+    y_range = y_max - y_min
+    plt.ylim(y_min - (0.1 * y_range), y_max)
+
+    # Update the legend with custom labels if provided
+    if legend_labels:
+        handles, labels = ax.get_legend_handles_labels()
+        # Ensure the number of labels matches
+        if len(legend_labels) != len(handles):
+            raise ValueError("Number of legend labels does not match the number of hues.")
+        ax.legend(handles[:len(legend_labels)], legend_labels, title=hue_column)
+    else:
+        ax.legend(title=hue_column)
 
     # Calculate and annotate counts
     if hue_column:
@@ -157,19 +169,55 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, file_name=Non
         for i, level in enumerate(group_counts.index):
             for j, hue_level in enumerate(group_counts.columns):
                 count = int(group_counts.loc[level, hue_level])
-                plt.text(i + j * 0.2 - 0.3, df[y_column].min() - 50 , f'n={count}', ha='center', va='top', fontsize=10, fontweight='bold')
+                x_pos = i + (j - 0.5 * (len(group_counts.columns) - 1)) * 0.8 / len(group_counts.columns)
+                plt.text(x_pos, y_min - 0.05 * y_range, f'n={count}',
+                         ha='center', va='top', fontsize=10, fontweight='bold')
     else:
         # Group by x_column only
         group_counts = df[x_column].value_counts().sort_index()
         for i, level in enumerate(group_counts.index):
             count = group_counts[level]
-            plt.text(i, df[y_column].min() - 0.1, f'n={count}', ha='center', va='top', fontsize=13)
-    
+            plt.text(i, y_min - 0.05 * y_range, f'n={count}', ha='center', va='top', fontsize=13)
+
+    # Connect points belonging to the same ID
+    if id_column:
+        x_levels = df[x_column].unique()
+        x_dict = {level: i for i, level in enumerate(x_levels)}
+        if hue_column:
+            hue_levels = df[hue_column].unique()
+            hue_dict = {level: i for i, level in enumerate(hue_levels)}
+            n_hues = len(hue_levels)
+            width = 0.8  # Total width allocated to hues
+        else:
+            hue_levels = [None]
+            hue_dict = {None: 0}
+            n_hues = 1
+            width = 0
+
+        positions = {}
+        for idx, row in df.iterrows():
+            x_level = row[x_column]
+            x_index = x_dict[x_level]
+            hue_level = row[hue_column] if hue_column else None
+            hue_index = hue_dict[hue_level]
+            # Compute the adjusted x position
+            x_pos = x_index + (hue_index - (n_hues - 1) / 2) * width / n_hues
+            y_val = row[y_column]
+            key = row[id_column]
+            positions.setdefault(key, []).append((x_pos, y_val))
+
+        # Plot lines connecting the positions for each ID
+        for key, pos_list in positions.items():
+            # Sort the positions by x positions to ensure correct line plotting
+            pos_list.sort(key=lambda x: x[0])
+            x_vals, y_vals = zip(*pos_list)
+            plt.plot(x_vals, y_vals, color='gray', alpha=0.5)
+
     # Set titles and labels
-    plt.title(f'{x_column} Distribution by {y_column}')
+    plt.title(f'{y_column} Distribution by {x_column}')
     plt.xlabel(x_column)
     plt.ylabel(y_column)
-    
+
     plt.tight_layout()
 
     if file_name:
