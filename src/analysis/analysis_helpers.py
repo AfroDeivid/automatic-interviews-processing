@@ -4,12 +4,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
-
-# Import necessary libraries for word frequency analysis
+import string
 from collections import Counter
+
 #nltk.download('stopwords') # Install NLTK stopwords if not already installed
 from nltk.corpus import stopwords
-import string
+
 
 def load_and_combine_csv(directory_path, pattern='*.csv'):
     """
@@ -150,7 +150,7 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
     # Extend y-limits to include space for counts
     y_min, y_max = plt.ylim()
     y_range = y_max - y_min
-    plt.ylim(y_min - (0.1 * y_range), y_max)
+    plt.ylim(y_min - (0.02 * y_range), y_max)
 
     # Update the legend with custom labels if provided
     if legend_labels:
@@ -170,14 +170,14 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
             for j, hue_level in enumerate(group_counts.columns):
                 count = int(group_counts.loc[level, hue_level])
                 x_pos = i + (j - 0.5 * (len(group_counts.columns) - 1)) * 0.8 / len(group_counts.columns)
-                plt.text(x_pos, y_min - 0.05 * y_range, f'n={count}',
+                plt.text(x_pos, y_min + 25 , f'n={count}',
                          ha='center', va='top', fontsize=10, fontweight='bold')
     else:
         # Group by x_column only
         group_counts = df[x_column].value_counts().sort_index()
         for i, level in enumerate(group_counts.index):
             count = group_counts[level]
-            plt.text(i, y_min - 0.05 * y_range, f'n={count}', ha='center', va='top', fontsize=13)
+            plt.text(i, y_min + 25, f'n={count}', ha='center', va='top', fontsize=13)
 
     # Connect points belonging to the same ID
     if id_column:
@@ -322,6 +322,7 @@ def count_unique_words(df, groupby_columns, unique_column="Id", content_column='
 
         # Group by unique participant identifier to get unique words per participant
         for participant_id, participant_data in group.groupby(unique_column):
+            #print(participant_id)
             # Collect unique words used by this participant
             unique_words = set()
             for content in participant_data[content_column].dropna():

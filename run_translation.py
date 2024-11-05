@@ -3,8 +3,7 @@ import time
 import torch
 from transformers import SeamlessM4Tv2ForTextToText, AutoProcessor
 
-from src.translation.translation_helpers import docx_to_csv, translate_csv
-from src.audio_and_experiment.format_helpers import get_files
+from src.translation.translation_helpers import docx_to_csv, translate_by_row_csv, get_files
 
 def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use_cuda):
     """Translate a single CSV file."""
@@ -14,7 +13,7 @@ def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use
     start_time = time.time()
 
     # Translate the CSV file
-    translate_csv(csv_file, source_lang, target_lang, model, processor, use_cuda)
+    translate_by_row_csv(csv_file, source_lang, target_lang, model, processor, use_cuda)
 
     # End the timer
     end_time = time.time()
@@ -81,7 +80,7 @@ def main():
     # Step 1: Convert Word files to CSV if type is 'docx', otherwise get CSV files
     if args.type == "docx":
         files = get_files(args.directory, [".docx"])
-        print(files)
+        print(files, "\n")
         for word_file in files:
 
             print(f"Converting {word_file} to CSV...")
