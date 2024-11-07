@@ -47,7 +47,11 @@ def split_long_substitutions(hyp_segment, ref_segment, tolerance, recursion_dept
 
     hyp_words = hyp_segment
     ref_words = ref_segment
-    sm = difflib.SequenceMatcher(None, hyp_words, ref_words)
+    # Create lowercased versions for comparison
+    hyp_words_lower = [word.lower() for word in hyp_words]
+    ref_words_lower = [word.lower() for word in ref_words]
+
+    sm = difflib.SequenceMatcher(None, hyp_words_lower, ref_words_lower)
     opcodes = sm.get_opcodes()
     result_html = ''
     total_D, total_I, total_S = 0, 0, 0
@@ -88,7 +92,11 @@ def format_diff_WER(ref_text, hyp_text, max_insert_length=None, tolerance_replac
     """
     ref_words = word_tokenize(ref_text)
     hyp_words = word_tokenize(hyp_text)
-    sm = difflib.SequenceMatcher(None, hyp_words, ref_words)
+    # Create lowercased versions for comparison
+    ref_words_lower = [word.lower() for word in ref_words]
+    hyp_words_lower = [word.lower() for word in hyp_words]
+
+    sm = difflib.SequenceMatcher(None, hyp_words_lower, ref_words_lower)
     opcodes = sm.get_opcodes()
     diff_html = ''
     total_D, total_I, total_S = 0, 0, 0
@@ -336,10 +344,11 @@ def get_active_speakers(df, start_time, end_time):
     active_speakers = df.loc[mask, 'Speaker'].unique()
     return set(map(str, active_speakers))
 
-def compute_der(df_ref, df_pred, total_ref_duration=None):
+def compute_der(df_ref, df_pred, total_ref_duration=None, tolerance=1.0):
     """
     Compute the Diarization Error Rate (DER) and error durations, excluding silence periods
     where neither reference nor prediction has active speakers.
+    Incorporates a tolerance window for missed detections and false alarms, due to manual annotation delays & overlaps.
     """
     segments = create_time_segments(df_ref, df_pred)
     total_ref_speech_duration = 0.0
@@ -368,11 +377,23 @@ def compute_der(df_ref, df_pred, total_ref_duration=None):
             total_confusion_duration += duration
             error_type = 'Confusion'
         elif ref_speakers and not pred_speakers:
-            total_missed_duration += duration
-            error_type = 'Missed Detection'
+            # Check for nearby prediction within tolerance
+            nearby_pred_speakers = has_nearby_speaker(df_pred, start_time, end_time, tolerance)
+            if nearby_pred_speakers.size > 0:
+                # Do not count as missed detection
+                error_type = ''  # No error
+            else:
+                total_missed_duration += duration
+                error_type = 'Missed Detection'
         elif not ref_speakers and pred_speakers:
-            total_false_alarm_duration += duration
-            error_type = 'False Alarm'
+            # Check for nearby reference within tolerance
+            nearby_ref_speakers = has_nearby_speaker(df_ref, start_time, end_time, tolerance)
+            if nearby_ref_speakers.size > 0:
+                # Do not count as false alarm
+                error_type = ''  # No error
+            else:
+                total_false_alarm_duration += duration
+                error_type = 'False Alarm'
         else:
             # This case should not occur due to the earlier check, but added for completeness
             error_type = 'Silence'
@@ -403,6 +424,13 @@ def compute_der(df_ref, df_pred, total_ref_duration=None):
 
     dialogue_df = pd.DataFrame(dialogue_data)
     return dialogue_df, error_durations
+
+def has_nearby_speaker(df, start_time, end_time, tolerance):
+    """
+    Check if there is any speaker in df within start_time - tolerance to end_time + tolerance
+    """
+    mask = (df['Start'] < end_time + tolerance) & (df['End'] > start_time - tolerance)
+    return df.loc[mask, 'Speaker'].unique()
 
 
 # For Visualization
@@ -516,7 +544,7 @@ def format_cell_diff(ref_value, pred_value):
         # No change
         return f"<td>{ref_value}</td>"
 
-def diarisation_html(reference_file, prediction_file, output_file, info_ref=None):
+def diarisation_html(reference_file, prediction_file, output_file, info_ref=None, tolerance=1.0):
     """
     Compare two CSV files and generate an HTML output highlighting the differences,
     including the dialogue DataFrame and diarization metrics.
@@ -543,7 +571,7 @@ def diarisation_html(reference_file, prediction_file, output_file, info_ref=None
     aligned_pairs = align_rows_by_time(df_ref, df_pred)
 
     # Compute DER and get dialogue DataFrame
-    dialogue_df, error_durations = compute_der(df_ref, df_pred, total_ref_duration= info_ref)
+    dialogue_df, error_durations = compute_der(df_ref, df_pred, total_ref_duration=info_ref, tolerance=tolerance)
 
     # Prepare HTML output
     html_output = "<html><head><style>"

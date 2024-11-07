@@ -23,7 +23,7 @@ def process_audio_file(audio_file, whisper_model, language):
     # End the timer
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"Finished processing {audio_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60:.0f} sec")
+    print(f"\n\n Finished processing {audio_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60:.0f} sec")
 
     # Convert .str file to .csv format
     base_input_directory = 'data'

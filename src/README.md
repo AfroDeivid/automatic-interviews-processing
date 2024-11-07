@@ -17,6 +17,9 @@ pip install nltk
 pip install openpyxl
 pip install wordcloud
 ```
+### Conventional metric in evaluation folder
+pip install jiwer
+pip install evaluate
 
 
 # LLAMA (Deprecated)

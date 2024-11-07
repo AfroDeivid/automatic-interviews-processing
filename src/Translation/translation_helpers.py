@@ -43,22 +43,22 @@ def extract_dialogue_from_docx(docx_file):
             if len(parts) == 2:
                 speaker = parts[0].strip()
                 dialogue_text = parts[1].strip()
-
-                # Maintain a list of known speakers
-                known_speakers.add(speaker)
-
+                
                 # Check if the speaker's name consists of more than one word
                 if len(speaker.split()) > 1 and speaker not in known_speakers:
                     print(f"Warning: The speaker '{speaker}' has more than one word. This might be an error.")
-                    user_input = input(f"Do you recognize this speaker '{speaker}'? (yes/no): ").strip().lower()
-                    if user_input == "yes":
+                    user_input = input(f"Do you recognize this speaker '{speaker}'? (y/n): ").strip().lower()
+                    if user_input == "y":
                         known_speakers.add(speaker)
                         print("Thanks! We set this speaker as valid name.")
-                    elif user_input == "no" and last_speaker:
+                    elif user_input == "n" and last_speaker:
                         # Reassign the text to the previous speaker
                         dialogues[-1]["Text"] += " " + text
                         print("Thanks! Therefore we assing this text to the previous speaker.")
                         continue
+
+                # Maintain a list of known speakers
+                known_speakers.add(speaker)
 
                 dialogues.append({"Speaker": speaker, "Text": dialogue_text})
                 last_speaker = speaker

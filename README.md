@@ -2,7 +2,7 @@
 
 # run_diarize.py
 
-``conda activate wd``
+``conda activate wd1``
 
 ```bash
 python run_diarize.py -d ".\data\OBE1" --whisper-model large-v3 --language en

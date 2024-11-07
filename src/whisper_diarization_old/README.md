@@ -5,8 +5,8 @@
 ## 1. Create Environment
 
 ```
-conda create --name wd1 python=3.10 --yes
-conda activate wd1
+conda create --name wd python=3.9 --yes
+conda activate wd
 ```
 
 ## 2. Prerequisite Installations
@@ -26,16 +26,27 @@ After ensuring the prerequisites are set up, proceed with installing the necessa
 Run the following comand inside the *Whisper_Diarization* folder.
 
 ```
-pip install -c constraints.txt -r requirements.txt
-pip install ipykernel
-
-???
 pip install cython
-
+pip install ipykernel
+pip install -r requirements.txt
+pip uninstall huggingface_hub
+pip install huggingface-hub==0.20.3
 ``` 
 
 # How to use
 
 ```
 python Whisper_Diariazation\diarize.py -a "..\data\OBE1\Id 15.m4a" --whisper-model large-v3 --language en
+```
+
+# Allow CUDA use (TO-DO)
+```
+conda create --name wdcuda python=3.9 --yes
+conda activate wdcuda
+pip install cython
+pip uninstall torch --yes
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia --yes
+pip install -r requirements.txt
+pip uninstall huggingface_hub --yes
+pip install huggingface-hub==0.20.3
 ```
