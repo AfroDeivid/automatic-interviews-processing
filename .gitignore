@@ -9,8 +9,10 @@
 *.html
 *.m4a
 *.mp4
-*.waw
+*.wav
 raw_data.xlsx
+
+ml_presentation/
 
 # Requierements
 !src/whisper_diarization/requirements.txt

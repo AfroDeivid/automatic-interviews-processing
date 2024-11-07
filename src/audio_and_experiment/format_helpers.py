@@ -29,7 +29,7 @@ def convert_str_to_csv(str_file, directory='Not Specified'):
     """Convert a single .str file to a CSV file."""
     csv_file = os.path.splitext(str_file)[0] + '.csv'
 
-    with open(str_file, 'r') as file:
+    with open(str_file, 'r', encoding='utf-8') as file:
         content = file.read()
 
     # Regular expression to match each entry in the .str file
@@ -80,7 +80,6 @@ def analyze_audio_files(directories, extensions):
                 "ID": extract_id(name),
                 'Duration': duration_string,
                 'Duration_sec': duration,
-                #"Duration_min": duration_min,
                 'Experiment': os.path.basename(directory),
 
             })

@@ -17,8 +17,13 @@ pip install nltk
 pip install openpyxl
 pip install wordcloud
 ```
-
+# Clusters
 pip install scikit-learn
+pip install sentence_transformers
+
+??
+pip install ipywidgets --upgrade
+
 ### Conventional metric in evaluation folder
 pip install jiwer
 pip install evaluate
