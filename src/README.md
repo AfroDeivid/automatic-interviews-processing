@@ -17,6 +17,8 @@ pip install nltk
 pip install openpyxl
 pip install wordcloud
 ```
+
+pip install scikit-learn
 ### Conventional metric in evaluation folder
 pip install jiwer
 pip install evaluate

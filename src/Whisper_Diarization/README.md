@@ -28,10 +28,8 @@ Run the following comand inside the *Whisper_Diarization* folder.
 ```
 pip install -c constraints.txt -r requirements.txt
 pip install ipykernel
-
-???
-pip install cython
-
+pip install pandas
+pip install pydub
 ``` 
 
 # How to use

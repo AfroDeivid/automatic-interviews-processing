@@ -12,6 +12,10 @@
 *.waw
 raw_data.xlsx
 
+# Requierements
+!src/whisper_diarization/requirements.txt
+!src/whisper_diarization/constraints.txt
+
 __pycache__/
 temp_outputs/
 
