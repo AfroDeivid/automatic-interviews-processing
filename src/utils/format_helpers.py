@@ -37,8 +37,8 @@ def convert_str_to_csv(str_file, directory='Not Specified'):
     matches = pattern.findall(content)
 
     # Write to CSV
-    with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile: # encoding='utf-8-sig' to add BOM signature and being recognized as UTF-8 format by Excel
-                                                                       # One possible solution to handle special characters in Excel but might create others conflicts
+    with open(csv_file, 'w', newline='', encoding='utf-8-sig') as csvfile: # encoding='utf-8-sig' to add BOM signature and being recognized as UTF-8 format by Excel
+                                                                       # One possible solution to handle special characters in Excel.
         fieldnames = ['Experiment', 'File Name', 'Id','Content Type' ,'Start Time', 'End Time', 'Speaker', 'Content']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)#, quoting=csv.QUOTE_ALL)
 

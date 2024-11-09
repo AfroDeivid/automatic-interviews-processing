@@ -1,4 +1,4 @@
-# Basics analysis & use of this repo
+# Set-Up for Basics analysis & use of this repo
 - audio_and_experiment
 - analyis
 - evaluation
@@ -29,10 +29,19 @@ pip install jiwer
 pip install evaluate
 
 
-# LLAMA (Deprecated)
+# Set-Up for Translation (Text-to-Text)
+
+## Seamless
 
 ```
-conda create --name llama python=3.10 --yes
-conda activate llama
-pip install ollama
+conda create --name seam python=3.10 --yes
+conda activate seam
+pip install ipykernel
+pip install ipywidgets
+pip install python-docx
+pip install tqdm
+pip install transformers
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install sentencepiece
+pip install protobuf
 ```

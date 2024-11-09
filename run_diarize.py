@@ -3,7 +3,7 @@ import subprocess
 import time
 import argparse
 
-from src.audio_and_experiment.format_helpers import get_files, convert_str_to_csv
+from utils.format_helpers import get_files, convert_str_to_csv
 
 def process_audio_file(audio_file, whisper_model, language):
     """Process a single audio file with the diarization script."""
@@ -55,7 +55,19 @@ def main():
         "--language",
         type=str,
         default="en",
-        help="Language for processing."
+        help="The language spoken in the audio. If the detected language is different "
+            "from the specified language and 'task'=None or 'transcribe', "
+            "the model will translate the audio to the specified language, otherwise if task='translate' it will translate the audio to English."
+    )
+    parser.add_argument(
+        "--task",
+        type=str,
+        default=None,
+        choices=["transcribe", "translate"],
+        help="Task to execute (transcribe or translate). Specify None to follow the 'language' argument; "
+            "it will translate when the audio does not match the specified language, useful for multilingual audios. "
+            "If the audio is entirely in another language and you want to translate to English (Whisper's best performance), "
+            "you can use the 'translate' task."
     )
     parser.add_argument(
         "-e", "--extensions",

@@ -3,7 +3,7 @@ import time
 import torch
 from transformers import SeamlessM4Tv2ForTextToText, AutoProcessor
 
-from src.translation.translation_helpers import docx_to_csv, translate_by_row_csv, get_files
+from utils.translation_helpers import docx_to_csv, translate_by_row_csv, get_files
 
 def translate_csv_file(csv_file, source_lang, target_lang, model, processor, use_cuda):
     """Translate a single CSV file."""

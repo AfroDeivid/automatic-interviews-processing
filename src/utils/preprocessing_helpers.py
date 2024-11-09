@@ -50,7 +50,8 @@ def organize_csv_files_by_dir(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-# Function to remove filler words
+# Function to remove filler words and clean the text
+
 def simpler_clean(text, filler_words = None):
 
     # Remove filler words from the text

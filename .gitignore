@@ -1,7 +1,12 @@
-#Data
+# Folders
 /data
 */results
 /results
+/evaluation
+/interviews_corrected
+src/ml_presentation
+
+# Files types
 *.txt
 *.str
 *.docx
@@ -10,17 +15,16 @@
 *.m4a
 *.mp4
 *.wav
+*.png
 raw_data.xlsx
 
-ml_presentation/
+# Installation files
+!requirements.txt
+!constraints.txt
 
-# Requierements
-!src/whisper_diarization/requirements.txt
-!src/whisper_diarization/constraints.txt
-
+# Byte-compiled / optimized / DLL files
 __pycache__/
 temp_outputs/
-
 #launch.json folder
 .vscode/
 #Cache folder

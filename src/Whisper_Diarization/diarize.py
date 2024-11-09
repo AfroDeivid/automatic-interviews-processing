@@ -33,6 +33,9 @@ from helpers import (
     write_srt,
 )
 
+import random
+random.seed(0)
+
 mtypes = {"cpu": "int8", "cuda": "float16"}
 
 # Initialize parser
@@ -80,6 +83,14 @@ parser.add_argument(
     default=None,
     choices=whisper_langs,
     help="Language spoken in the audio, specify None to perform language detection",
+)
+
+parser.add_argument(
+    "--task",
+    type=str,
+    default=None,
+    choices= ["transcribe", "translate"],
+    help="Task to execute (transcribe or translate), specify None to follow 'language' argument",
 )
 
 parser.add_argument(
@@ -147,6 +158,7 @@ else:
         suppress_tokens=suppress_tokens,
         without_timestamps=True,
         vad_filter=True,
+        task=args.task,
     )
 
 full_transcript = "".join(segment.text for segment in transcript_segments)
