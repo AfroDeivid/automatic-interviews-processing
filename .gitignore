@@ -16,7 +16,7 @@ src/ml_presentation
 *.mp4
 *.wav
 *.png
-raw_data.xlsx
+*.xlsx
 
 # Installation files
 !requirements.txt

@@ -50,8 +50,38 @@ def organize_csv_files_by_dir(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-# Function to remove filler words and clean the text
+def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False, conditions=None):
+    for subdir, _, files in os.walk(raw_folder):
+        for file in files:
+            if file.endswith(".csv"):
+                # Create corresponding subdirectory in destination folder
+                relative_path = os.path.relpath(subdir, raw_folder)
+                destination_subdir = os.path.join(destination_folder, relative_path)
+                os.makedirs(destination_subdir, exist_ok=True)
+                
+                # Define file paths
+                raw_file_path = os.path.join(subdir, file)
+                destination_file_path = os.path.join(destination_subdir, file)
+                
+                # Load the CSV file, process it, and save the result
+                data = pd.read_csv(raw_file_path)
+                if fillers_words:
+                    data['Content'] = data['Content'].apply(simpler_clean, args=(fillers_words,))
+                    # Remove rows with None values
+                    data = data.dropna(subset=['Content'])
+                if roles:
+                    df_role, _ = assign_roles(data, file_name=file)
+                    data["Speaker"] = df_role["Role"]
+                if text_format:
+                    convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
+                    continue
+                if conditions is not None:
+                    data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
+                    data["Order Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Order Condition"].values[0]
+                
+                data.to_csv(destination_file_path, index=False)
 
+# Function to remove filler words and clean the text
 def simpler_clean(text, filler_words = None):
 
     # Remove filler words from the text
@@ -86,37 +116,6 @@ def simpler_clean(text, filler_words = None):
         
     return text
 
-def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False, conditions=None):
-    for subdir, _, files in os.walk(raw_folder):
-        for file in files:
-            if file.endswith(".csv"):
-                # Create corresponding subdirectory in destination folder
-                relative_path = os.path.relpath(subdir, raw_folder)
-                destination_subdir = os.path.join(destination_folder, relative_path)
-                os.makedirs(destination_subdir, exist_ok=True)
-                
-                # Define file paths
-                raw_file_path = os.path.join(subdir, file)
-                destination_file_path = os.path.join(destination_subdir, file)
-                
-                # Load the CSV file, process it, and save the result
-                data = pd.read_csv(raw_file_path)
-                if fillers_words:
-                    data['Content'] = data['Content'].apply(simpler_clean, args=(fillers_words,))
-                    # Remove rows with None values
-                    data = data.dropna(subset=['Content'])
-                if roles:
-                    df_role, _ = assign_roles(data, file_name=file)
-                    data["Speaker"] = df_role["Role"]
-                if text_format:
-                    convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
-                    continue
-                if conditions is not None:
-                    data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
-                    data["Order Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Order Condition"].values[0]
-                
-                data.to_csv(destination_file_path, index=False)
-
 def assign_roles(data, file_name= None):
     """
     Assigns roles to speakers in the DataFrame based on participant and interviewer scores.
@@ -127,13 +126,11 @@ def assign_roles(data, file_name= None):
     Returns:
     - pd.DataFrame: DataFrame with an added 'Role' column.
     """
-
     df = data.copy()
 
     # Define regex patterns for participant and interviewer utterances
     participant_patterns = ["I", "me", "my", "mine", "myself"] # First person pronouns
                             
-
     interviewer_patterns = ['your', 'yours', 'yourself', # Second person pronouns
                             "could you", "can you", "would you", "do you", "please", "mind if I record",  # Common interviewer phrases
                             "question", "how"] # Questions
@@ -141,11 +138,9 @@ def assign_roles(data, file_name= None):
     participant_patterns = r'\b(' + '|'.join(map(re.escape, participant_patterns)) + r')\b'
     interviewer_patterns = r'\b(' + '|'.join(map(re.escape, interviewer_patterns)) + r')\b'
     
-
     # '?' does not have word boundaries like words do, so it won't be matched by patterns with \b.
     # So we handle it separately
     question_mark_weight = 1  # Default weight for '?'
-
 
     # Initialize a dictionary to store scores
     scores = {}
