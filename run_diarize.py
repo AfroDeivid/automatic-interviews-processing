@@ -3,9 +3,9 @@ import subprocess
 import time
 import argparse
 
-from utils.format_helpers import get_files, convert_str_to_csv
+from src.utils.format_helpers import get_files, convert_str_to_csv
 
-def process_audio_file(audio_file, whisper_model, language):
+def process_audio_file(audio_file, whisper_model, language, task):
     """Process a single audio file with the diarization script."""
     print(f"Processing {audio_file}...")
 
@@ -17,7 +17,8 @@ def process_audio_file(audio_file, whisper_model, language):
         "python", "src\whisper_diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
-        "--language", language
+        "--language", language,
+        "--task", task
     ])
 
     # End the timer
@@ -85,10 +86,11 @@ def main():
     print("Parse audio: ", audio_files)
     print("Parse extensions: ", args.extensions)
     print("Parse Language: ", args.language)
+    print("Parse Task: ", args.task)
 
     # Process each audio file
     for audio_file in audio_files:
-        process_audio_file(audio_file, args.whisper_model, args.language)
+        process_audio_file(audio_file, args.whisper_model, args.language, args.task)
 
 if __name__ == "__main__":
     main()
