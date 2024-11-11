@@ -3,7 +3,7 @@ import subprocess
 import time
 import argparse
 
-from utils.format_helpers import get_files, convert_str_to_csv
+from src.utils.format_helpers import get_files, convert_str_to_csv
 
 def process_audio_file(audio_file, whisper_model, language):
     """Process a single audio file with the diarization script."""
@@ -28,12 +28,13 @@ def process_audio_file(audio_file, whisper_model, language):
     # Convert .str file to .csv format
     base_input_directory = 'data'
     relative_path = os.path.relpath(audio_file, base_input_directory)  
+    experiment_name = relative_path.split(os.sep)[0]  # Extract the first folder in 'relative_path'
+
     str_dir = os.path.join("results", os.path.dirname(relative_path)) 
-    #print(".str Dir:", str_dir)
     base_name = os.path.splitext(os.path.basename(audio_file))[0]  # Get the file name without extension
     str_file = os.path.join(str_dir,f"{base_name}.str")
 
-    convert_str_to_csv(str_file, str_dir)
+    convert_str_to_csv(str_file, experiment_name)
 
 
 def main():

@@ -4,7 +4,41 @@ import shutil
 import re
 import csv
 
-def organize_csv_files_by_dir(source_dir, destination_dir):
+def copy_csv_files_with_structure(source_dir, destination_dir):
+    # Ensure destination directory exists
+    if not os.path.exists(destination_dir):
+        os.makedirs(destination_dir)
+        print(f"Created destination directory: {destination_dir}")
+
+    # Walk through all files and subdirectories in the source directory
+    for root, _, files in os.walk(source_dir):
+        for filename in files:
+            if filename.lower().endswith('.csv'):
+                file_path = os.path.join(root, filename)
+                
+                try:
+                    print(f"Processing file: {file_path}")
+                    
+                    # Determine the relative path from the source directory
+                    relative_path = os.path.relpath(file_path, source_dir)
+                    
+                    # Define the destination path with the same structure
+                    destination_path = os.path.join(destination_dir, relative_path)
+                    
+                    # Ensure the subdirectory exists in the destination
+                    destination_subdir = os.path.dirname(destination_path)
+                    if not os.path.exists(destination_subdir):
+                        os.makedirs(destination_subdir)
+                        print(f"Created subdirectory: {destination_subdir}")
+                    
+                    # Copy the file to the destination
+                    shutil.copy(file_path, destination_path)
+                    print(f"Copied {filename} to {destination_subdir}")
+
+                except Exception as e:
+                    print(f"Error processing file {filename}: {e}")
+
+def organize_csv_files_by_experiment(source_dir, destination_dir):
     # Ensure destination directory exists
     if not os.path.exists(destination_dir):
         os.makedirs(destination_dir)
@@ -66,8 +100,8 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                 # Load the CSV file, process it, and save the result
                 data = pd.read_csv(raw_file_path)
                 if fillers_words:
+                    data = data.dropna(subset=['Content'])
                     data['Content'] = data['Content'].apply(simpler_clean, args=(fillers_words,))
-                    # Remove rows with None values
                     data = data.dropna(subset=['Content'])
                 if roles:
                     df_role, _ = assign_roles(data, file_name=file)
@@ -182,15 +216,20 @@ def assign_roles(data, file_name= None):
         # Calculate the score difference for all speakers and select the one with the highest difference
         print(f"File '{file_name}': Couldn't accurately predict the most probable participant. Define the mosts probable interviewers and select by default the participant as a fallback.")
         participant_speaker = scores_df.sort_values(by='score_diff', ascending=False).iloc[0]['Speaker']
-        
+
     # Assign roles
     interviewer_count = 1
+    unique_interviewers = scores_df['Speaker'].nunique() - 1  # Assuming one unique participant speaker
     for speaker in scores_df['Speaker']:
         if speaker == participant_speaker:
             role_dict[speaker] = 'Participant'
         else:
-            role_dict[speaker] = f'Interviewer {interviewer_count}'
-            interviewer_count += 1
+            # Only add numbering if there's more than one interviewer
+            if unique_interviewers > 1:
+                role_dict[speaker] = f'Interviewer {interviewer_count}'
+                interviewer_count += 1
+            else:
+                role_dict[speaker] = 'Interviewer'
     
     # Assign roles to scores_df
     scores_df['Role'] = scores_df['Speaker'].map(role_dict)
@@ -243,3 +282,38 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt):
         if previous_speaker is not None and dialogue_buffer:
             dialogue_line = f"{previous_speaker}: {dialogue_buffer}"
             txtfile.write(dialogue_line)
+
+
+def merge_csv_in_subdirectories(source_dir, output_dir):
+    # Ensure the output directory exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Created output directory: {output_dir}")
+
+    # Iterate over each subdirectory in the source directory
+    for subdir in os.listdir(source_dir):
+        subdir_path = os.path.join(source_dir, subdir)
+        
+        # Ensure it's a directory
+        if os.path.isdir(subdir_path):
+            csv_files = [f for f in os.listdir(subdir_path) if f.endswith('.csv')]
+            
+            # Check if there are exactly two CSV files to merge
+            if len(csv_files) == 2:
+                csv_paths = [os.path.join(subdir_path, f) for f in csv_files]
+                
+                # Read and concatenate the CSV files
+                try:
+                    df_list = [pd.read_csv(file) for file in csv_paths]
+                    merged_df = pd.concat(df_list, ignore_index=True)
+                    
+                    # Save the merged file in the output directory
+                    merged_file_name = f"{subdir}_merged.csv"
+                    merged_file_path = os.path.join(output_dir, merged_file_name)
+                    merged_df.to_csv(merged_file_path, index=False)
+                    print(f"Merged files from {subdir_path} into {merged_file_path}")
+                
+                except Exception as e:
+                    print(f"Error merging files in {subdir_path}: {e}")
+            else:
+                print(f"Skipping {subdir_path}: Expected 2 CSV files, found {len(csv_files)}")

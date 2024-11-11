@@ -25,7 +25,7 @@ def extract_id(name):
 
     return participant_id
 
-def convert_str_to_csv(str_file, directory='Not Specified'):
+def convert_str_to_csv(str_file, experiment='Not Specified'):
     """Convert a single .str file to a CSV file."""
     csv_file = os.path.splitext(str_file)[0] + '.csv'
 
@@ -47,7 +47,7 @@ def convert_str_to_csv(str_file, directory='Not Specified'):
             start_time, end_time, speaker, text = match
             name = os.path.splitext(os.path.basename(str_file))[0]
             writer.writerow({
-                'Experiment': os.path.basename(directory),
+                'Experiment': experiment,
                 'File Name': name,
                 'Id': extract_id(name),
                 'Content Type': "Audio",
