@@ -131,6 +131,7 @@ else:
 print("Language: ", args.language)
 print("Model: ", args.model_name)
 print("Device: ", args.device)
+print("Task: ", args.task)
 
 whisper_model = faster_whisper.WhisperModel(
     args.model_name, device=args.device, compute_type=mtypes[args.device]
@@ -150,6 +151,7 @@ if args.batch_size > 0:
         suppress_tokens=suppress_tokens,
         batch_size=args.batch_size,
         without_timestamps=True,
+        task=args.task,
     )
 else:
     transcript_segments, info = whisper_model.transcribe(
