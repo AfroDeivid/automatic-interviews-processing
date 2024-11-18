@@ -24,9 +24,26 @@ pip install sentence_transformers
 ??
 pip install ipywidgets --upgrade
 
-### Conventional metric in evaluation folder
-pip install jiwer
-pip install evaluate
+# Topic
+conda create --name topic python=3.10 --yes
+conda activate topic
+conda install -c conda-forge gensim  --yes
+conda install numpy  --yes
+conda install scikit-learn --yes
+conda install sentence_transformers --yes
+conda install matplotlib  --yes 
+conda install pandas  --yes
+conda install seaborn  --yes
+conda install nltk  --yes
+pip install sentence-transformers
+
+
+
+
+
+
+
+
 
 
 # Set-Up for Translation (Text-to-Text)

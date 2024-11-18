@@ -4,6 +4,7 @@ import time
 import argparse
 
 from src.utils.format_helpers import get_files, convert_str_to_csv
+from src.utils.preprocessing_helpers import preprocessing_csv
 
 def process_audio_file(audio_file, whisper_model, language, task):
     """Process a single audio file with the diarization script."""
@@ -12,14 +13,17 @@ def process_audio_file(audio_file, whisper_model, language, task):
     # Start the timer
     start_time = time.time()
 
-    # Run the Python script
-    subprocess.run([
+    command = [
         "python", "src\whisper_diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
-        "--language", language,
-        "--task", task
-    ])
+        "--language", language
+    ]
+    if task is not None:
+        command.extend(["--task", task])
+
+    # Run the Python script
+    subprocess.run(command)
 
     # End the timer
     end_time = time.time()
@@ -36,6 +40,9 @@ def process_audio_file(audio_file, whisper_model, language, task):
     str_file = os.path.join(str_dir,f"{base_name}.str")
 
     convert_str_to_csv(str_file, experiment_name)
+
+    # Preprocessing version of the csv, inside `results/processed`
+    preprocessing_csv(str_file)
 
 
 def main():

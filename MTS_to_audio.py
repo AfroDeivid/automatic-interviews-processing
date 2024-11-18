@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-input_directory = "./data/Grief/MTS"
+input_directory = "./data/Grief/MTS_2"
 output_directory = "./data/Grief"
 base_input_directory = 'data'
 

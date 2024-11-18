@@ -21,8 +21,8 @@ Ensure that FFMPEG is added to your system’s PATH.
 After ensuring the prerequisites are set up, proceed with creating the folowing environement :
 
 ```
-conda create --name wd1 python=3.10 --yes
-conda activate wd1
+conda create --name wd python=3.10 --yes
+conda activate wd
 pip install -c constraints.txt -r requirements.txt
 pip install ipykernel
 pip install pandas

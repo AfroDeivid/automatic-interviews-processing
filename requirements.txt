@@ -1,8 +1,9 @@
 wget
 nemo_toolkit[asr]==2.0.0rc0
 nltk
-git+https://github.com/SYSTRAN/faster-whisper.git@203dddb047fd2c3ed2a520fe1416467a527e0f37
-git+https://github.com/MahmoudAshraf97/demucs.git@4273070a70ded308ddfd0879d267bbd06f89a1b7
-git+https://github.com/oliverguhr/deepmultilingualpunctuation.git@5a0dd7f4fd56687f59405aa8eba1144393d8b74b
-git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git@c7cc7ce609e5f8f1f553fbd1e53124447ffe46d8
+git+https://github.com/SYSTRAN/faster-whisper.git
+git+https://github.com/MahmoudAshraf97/demucs.git
+git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
+git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
+
 

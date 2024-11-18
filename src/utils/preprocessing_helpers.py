@@ -3,6 +3,7 @@ import pandas as pd
 import shutil
 import re
 import csv
+import numpy as np
 
 def copy_csv_files_with_structure(source_dir, destination_dir):
     # Ensure destination directory exists
@@ -84,7 +85,7 @@ def organize_csv_files_by_experiment(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False, conditions=None):
+def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None):
     for subdir, _, files in os.walk(raw_folder):
         for file in files:
             if file.endswith(".csv"):
@@ -107,7 +108,11 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                     df_role, _ = assign_roles(data, file_name=file)
                     data["Speaker"] = df_role["Role"]
                 if text_format:
-                    convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path)
+                    # if df have 'Original Content' column, use it to create a dialogue with both original and processed content
+                    if 'Original Content' in data.columns:
+                        convert_csv_to_dialogue_with_original(raw_file_path, destination_file_path, include_timestamps=time_stamps)
+                    else:
+                        convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path, include_timestamps=time_stamps)
                     continue
                 if conditions is not None:
                     data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
@@ -241,14 +246,16 @@ def assign_roles(data, file_name= None):
     
     return df, scores_df
 
-def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt):
+
+def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timestamps=False):
     """
     Converts a CSV file to a dialogue-style text file with only Speaker and Content,
-    merging consecutive entries from the same speaker.
+    merging consecutive entries from the same speaker. Optionally includes timestamps.
 
     Args:
         input_csv (str): Path to the input CSV file.
         output_txt (str): Path to the output text file.
+        include_timestamps (bool): Whether to include timestamps for each merged dialogue.
     """
     output_txt = os.path.splitext(output_txt)[0] + '.txt'
     with open(input_csv, mode='r', encoding='utf-8') as csvfile, \
@@ -258,10 +265,14 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt):
         
         previous_speaker = None
         dialogue_buffer = ""
+        start_time = None
+        end_time = None
         
         for row in reader:
             speaker = row.get('Speaker', 'Unknown').strip()
             content = row.get('Content', '').strip()
+            row_start_time = row.get('Start Time', '').strip()
+            row_end_time = row.get('End Time', '').strip()
             
             if not speaker or not content:
                 continue  # Skip rows with missing speaker or content
@@ -269,19 +280,111 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt):
             if speaker == previous_speaker:
                 # Append to the existing dialogue buffer
                 dialogue_buffer += f" {content}"
+                if include_timestamps:
+                    end_time = row_end_time  # Update the end time
             else:
                 if previous_speaker is not None:
-                    dialogue_line = f"{previous_speaker}: {dialogue_buffer}\n\n"
+                    # Write the previous dialogue buffer with optional timestamps
+                    if include_timestamps and start_time and end_time:
+                        dialogue_line = f"{start_time} --> {end_time}\n{previous_speaker}: {dialogue_buffer}\n\n"
+                    else:
+                        dialogue_line = f"{previous_speaker}: {dialogue_buffer}\n\n"
                     txtfile.write(dialogue_line)
                 
                 # Start a new dialogue buffer
                 previous_speaker = speaker
                 dialogue_buffer = content
+                start_time = row_start_time
+                end_time = row_end_time
         
         # Write the last dialogue buffer after the loop ends
         if previous_speaker is not None and dialogue_buffer:
-            dialogue_line = f"{previous_speaker}: {dialogue_buffer}"
+            if include_timestamps and start_time and end_time:
+                dialogue_line = f"{start_time} --> {end_time}\n{previous_speaker}: {dialogue_buffer}"
+            else:
+                dialogue_line = f"{previous_speaker}: {dialogue_buffer}"
             txtfile.write(dialogue_line)
+
+
+def convert_csv_to_dialogue_with_original(input_csv, output_txt, include_timestamps=False):
+    """
+    Converts a CSV file to a dialogue-style text file with Content and Original Content side by side,
+    merging consecutive entries from the same speaker. Optionally includes timestamps for Content.
+
+    Args:
+        input_csv (str): Path to the input CSV file.
+        output_txt (str): Path to the output text file.
+        include_timestamps (bool): Whether to include timestamps for Content.
+    """
+    output_txt = os.path.splitext(output_txt)[0] + '.txt'
+    with open(input_csv, mode='r', encoding='utf-8') as csvfile, \
+            open(output_txt, mode='w', encoding='utf-8') as txtfile:
+        
+        reader = csv.DictReader(csvfile)
+        
+        previous_speaker = None
+        dialogue_buffer_content = ""
+        dialogue_buffer_original = ""
+        start_time = None
+        end_time = None
+
+        for row in reader:
+            speaker = row.get('Speaker', 'Unknown').strip()
+            content = row.get('Content', '').strip()
+            original_content = row.get('Original Content', '').strip()
+            row_start_time = row.get('Start Time', '').strip()
+            row_end_time = row.get('End Time', '').strip()
+            
+            # Skip rows with missing content
+            if not speaker or not content:
+                continue
+            
+            if speaker == previous_speaker:
+                # Append to the existing dialogue buffers
+                dialogue_buffer_content += f" {content}"
+                dialogue_buffer_original += f" {original_content}"
+                if include_timestamps:
+                    end_time = row_end_time  # Update the end time
+            else:
+                if previous_speaker is not None:
+                    # Write the previous dialogue buffers with timestamps for Content
+                    if include_timestamps and start_time and end_time:
+                        dialogue_line = (
+                            f"{start_time} --> {end_time}\n"
+                            f"{previous_speaker}: {dialogue_buffer_content}\n\n"
+                            f"Original Content: {dialogue_buffer_original}\n\n"
+                        )
+                    else:
+                        dialogue_line = (
+                            f"Speaker {previous_speaker}: {dialogue_buffer_content}\n"
+                            f"Original Content: {dialogue_buffer_original}\n\n"
+                        )
+                    txtfile.write(dialogue_line)
+                
+                # Start new dialogue buffers
+                previous_speaker = speaker
+                dialogue_buffer_content = content
+                dialogue_buffer_original = original_content
+                start_time = row_start_time
+                end_time = row_end_time
+
+        # Write the last dialogue buffer after the loop ends
+        if previous_speaker is not None and dialogue_buffer_content:
+            if include_timestamps and start_time and end_time:
+                dialogue_line = (
+                    f"{start_time} --> {end_time}\n"
+                    f"Speaker {previous_speaker}:\n"
+                    f"Content: {dialogue_buffer_content}\n"
+                    f"Original Content: {dialogue_buffer_original}\n"
+                )
+            else:
+                dialogue_line = (
+                    f"Speaker {previous_speaker}:\n"
+                    f"Content: {dialogue_buffer_content}\n"
+                    f"Original Content: {dialogue_buffer_original}\n"
+                )
+            txtfile.write(dialogue_line)
+
 
 
 def merge_csv_in_subdirectories(source_dir, output_dir):
@@ -317,3 +420,167 @@ def merge_csv_in_subdirectories(source_dir, output_dir):
                     print(f"Error merging files in {subdir_path}: {e}")
             else:
                 print(f"Skipping {subdir_path}: Expected 2 CSV files, found {len(csv_files)}")
+
+def preprocessing_csv(str_file):
+    """Create a processed version of the CSV directly from the .str file path."""
+    # List of common filler words to remove
+    fillers_words = ["uh", "huh", "um", "hmm", "Mm"]
+    
+    # Change the extension from .str to .csv
+    csv_path = str_file.replace('.str', '.csv')
+    
+    # Load the CSV file generated from the .str file
+    df = pd.read_csv(csv_path)
+    
+    # Apply preprocessing functions
+    ## Remove fillers words & basic cleaning
+    df = df.dropna(subset=['Content'])
+    df['Content'] = df['Content'].apply(simpler_clean, args=(fillers_words,))
+    df = df.dropna(subset=['Content'])
+
+    ## Assign roles
+    df_role, _ = assign_roles(df, file_name=csv_path)
+    df["Speaker"] = df_role["Role"]
+
+    # Define the output directory within `results/processed`, mirroring the original structure
+    relative_path = os.path.relpath(str_file, "results")  # Calculate the relative path from `results`
+    preproced_dir = os.path.join("results", "processed", os.path.dirname(relative_path))
+    os.makedirs(preproced_dir, exist_ok=True)  # Create necessary directories
+
+    preproced_csv_path = os.path.join(preproced_dir, os.path.basename(csv_path))
+    df.to_csv(preproced_csv_path, index=False)
+    print(f"Saved preprocessed file to {preproced_csv_path}")
+
+def match_transcripts(reference_df, target_df):
+    """
+    Align transcripts by largest overlap or closest proximity.
+    Adds speaker annotations when merging target content with different speakers.
+    Returns a list of of the target content strings, aligned with the index of reference_df.
+    """
+    # Copy dataframes to avoid modifying originals
+    reference_df = reference_df.copy()
+    target_df = target_df.copy()
+
+    def time_to_ms(timestamp):
+        h, m, s_ms = timestamp.strip().split(":")
+        s, ms = s_ms.split(",")
+        total_ms = (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms)
+        return total_ms
+
+    # Convert timestamps to milliseconds
+    reference_df['Start_ms'] = reference_df['Start Time'].apply(time_to_ms)
+    reference_df['End_ms'] = reference_df['End Time'].apply(time_to_ms)
+    target_df['Start_ms'] = target_df['Start Time'].apply(time_to_ms)
+    target_df['End_ms'] = target_df['End Time'].apply(time_to_ms)
+
+    
+    ref_intervals = pd.IntervalIndex.from_arrays(reference_df['Start_ms'], reference_df['End_ms'], closed='both')    
+
+    ref_df_intervals = reference_df[['Start_ms', 'End_ms']].copy()
+    ref_df_intervals['ref_index'] = ref_df_intervals.index
+    tar_df_intervals = target_df[['Start_ms', 'End_ms']].copy()
+    tar_df_intervals['tar_index'] = tar_df_intervals.index
+
+    # Build a dataframe of overlaps
+    overlaps = []
+    for idx, row in tar_df_intervals.iterrows():
+        # Find overlapping reference intervals
+        overlapping_refs = ref_intervals.overlaps(pd.Interval(row['Start_ms'], row['End_ms'], closed='both'))
+        if overlapping_refs.any():
+            # Compute overlap durations
+            overlap_durations = (np.minimum(reference_df.loc[overlapping_refs, 'End_ms'], row['End_ms']) - 
+                                 np.maximum(reference_df.loc[overlapping_refs, 'Start_ms'], row['Start_ms']))
+            # Select the reference with the maximum overlap
+            max_overlap_idx = overlap_durations.idxmax()
+            overlaps.append((row['tar_index'], max_overlap_idx))
+        else:
+            # No overlap; will handle later
+            overlaps.append((row['tar_index'], None))
+
+    # Convert overlaps to DataFrame
+    overlaps_df = pd.DataFrame(overlaps, columns=['tar_index', 'ref_index'])
+
+    # Handle non-overlapping target intervals by assigning to the nearest reference interval
+    no_overlap_mask = overlaps_df['ref_index'].isnull()
+    if no_overlap_mask.any():
+        # For target intervals with no overlaps
+        no_overlap_tar_indices = overlaps_df.loc[no_overlap_mask, 'tar_index']
+        tar_no_overlap = target_df.loc[no_overlap_tar_indices]
+        tar_no_overlap['mid_point'] = (tar_no_overlap['Start_ms'] + tar_no_overlap['End_ms']) / 2
+
+        # Compute distances to reference intervals' midpoints
+        ref_mid_points = (reference_df['Start_ms'] + reference_df['End_ms']) / 2
+        distances = ref_mid_points.values.reshape(-1, 1) - tar_no_overlap['mid_point'].values.reshape(1, -1)
+        distances = np.abs(distances)
+
+        # Find the closest reference interval for each target interval
+        closest_refs = distances.argmin(axis=0)
+        overlaps_df.loc[no_overlap_mask, 'ref_index'] = closest_refs
+
+    # Group target rows by their matched reference rows
+    target_df['ref_index'] = overlaps_df['ref_index'].values
+    grouped = target_df.groupby('ref_index')
+
+    # Prepare the target content list aligned with reference_df
+    target_content_list = [None] * len(reference_df)
+
+    for ref_idx, group in grouped:
+        # Get the sorted target contents
+        group_sorted = group.sort_values('Start_ms')
+        speakers = group_sorted['Speaker'].unique()
+        if len(speakers) > 1:
+            # Annotate speakers
+            speaker_contents = group_sorted.groupby('Speaker')['Content'].apply(' '.join)
+            target_content_str = ' '.join(f'Speaker {sp}: {cnt}' for sp, cnt in speaker_contents.items())
+        else:
+            # Single speaker
+            target_content_str = ' '.join(group_sorted['Content'])
+        target_content_list[int(ref_idx)] = target_content_str
+
+    return target_content_list
+
+def match_transcripts_folder(reference_dir, target_dir, output_dir):
+    """
+    Walks through reference_dir and target_dir, matches CSV files with the same name,
+    applies match_transcripts_refined function to each pair, and saves the output in output_dir.
+    
+    Parameters:
+        reference_dir (str): The directory containing the reference English CSV files.
+        target_dir (str): The directory containing the target French CSV files.
+        output_dir (str): The directory where the matched CSV files will be saved.
+    """
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Collect all CSV files from the reference directory
+    for root, dirs, files in os.walk(reference_dir):
+        for file in files:
+            if file.endswith('.csv'):
+                # Construct full path for the reference file
+                reference_file_path = os.path.join(root, file)
+                
+                # Compute the relative path to maintain directory structure
+                relative_path = os.path.relpath(reference_file_path, reference_dir)
+                
+                # Construct the corresponding target file path
+                target_file_path = os.path.join(target_dir, relative_path)
+                
+                # Check if the corresponding target file exists
+                if os.path.exists(target_file_path):
+                    # Load the data
+                    df_ref = pd.read_csv(reference_file_path)
+                    df_target = pd.read_csv(target_file_path)
+                    
+                    # Perform the matching
+                    df_ref["Original Content"] = match_transcripts(df_ref, df_target)
+                    
+                    # Construct the output file path
+                    output_file_path = os.path.join(output_dir, relative_path)
+                    
+                    # Ensure the output subdirectory exists
+                    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+                    
+                    # Save the updated DataFrame
+                    df_ref.to_csv(output_file_path, index=False, encoding='utf-8-sig')
+                else:
+                    print(f"Matching file not found for {reference_file_path}")

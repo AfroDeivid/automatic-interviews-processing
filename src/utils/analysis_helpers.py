@@ -3,15 +3,13 @@ import glob
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from wordcloud import WordCloud
+#from wordcloud import WordCloud
 import string
 from collections import Counter
+from typing import Optional, List, Set
 
-# Install NLTK stopwords if not already installed
-#nltk.download('stopwords')
-#nltk.download('wordnet')
-#nltk.download('punkt')
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 
 def load_and_combine_csv(directory_path, pattern='*.csv'):
@@ -117,16 +115,6 @@ def aggregate_counts(df, groupby_columns):
     
     return aggregated
 
-def box_plot(df,x_column,y_column, hue_column=None):
-
-    sns.set(style="whitegrid")
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x=x_column, y=y_column, data=df, hue=hue_column)
-    plt.title(f'{x_column} Distribution by {y_column}')
-    plt.xlabel(x_column)
-    plt.ylabel(y_column)
-    plt.show()
-
 def stripplot(df,x_column,y_column, hue_column=None):
 
     sns.set(style="whitegrid")
@@ -228,156 +216,186 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
 
     plt.show()
 
+### Text Analysis Functions
 
-def word_frequency_plot(df, groupby_column=None, omit_stop_words=True, extra_stopwords=None, top_n=20):
+def word_frequency_analysis(
+    df: pd.DataFrame,
+    content_column: str = 'Content',
+    groupby_column: Optional[str] = None,
+    omit_stop_words: bool = True,
+    extra_stopwords: Optional[Set[str]] = None,
+    top_n: int = 20
+):
     """
     Plot word frequency analysis with subplots for each group in a specified column.
-    
+
     Parameters:
     - df (pd.DataFrame): The DataFrame containing the data.
-    - groupby_column (str or None): The column name to group by (e.g., 'Experiment'). If None, no grouping.
-    - stop_words (bool): Whether to remove English stopwords.
+    - content_column (str): Column containing text content.
+    - groupby_column (str, optional): The column name to group by. If None, no grouping.
+    - omit_stop_words (bool): Whether to remove English stopwords.
+    - extra_stopwords (set of str, optional): Additional words to exclude.
     - top_n (int): Number of top words to display.
-    
+
     Returns:
-    - combined_top_n_df (pd.DataFrame): DataFrame containing the top words and their frequencies.
+    - None
     """
-    
-    # Set up stopwords and punctuation filters
-    stop_words_set = set(stopwords.words('english')) if omit_stop_words else set()
-    stop_words_set.update(extra_stopwords or [])  # Add any additional stopwords if provided
-    
-    # Function to clean and tokenize text
-    def tokenize(text):
-        tokens = []
-        for word in text.split():
-            word_clean = word.strip(string.punctuation).lower()
-            if word_clean and word_clean not in stop_words_set:
-                tokens.append(word_clean)
-        return tokens
-    
-    # Prepare for grouping or use the entire DataFrame if no grouping column is specified
+    stop_words_set = _prepare_stopwords(omit_stop_words, extra_stopwords)
     grouped = df.groupby(groupby_column) if groupby_column else [(None, df)]
     num_groups = len(grouped) if groupby_column else 1
-    
-    # Initialize storage for results
-    top_words_list = []
-
-    # Set up subplots
     fig, axes = plt.subplots(num_groups, 1, figsize=(10, 5 * num_groups), squeeze=False)
-    axes = axes.flatten() if groupby_column else [axes[0, 0]]  # Flatten axes only if grouped
-    
-    for idx, (group_name, group_df) in enumerate(grouped):
-        # Tokenize and count word frequencies
-        tokens = [token for content in group_df['Content'] for token in tokenize(content)]
-        top_n_df = pd.DataFrame(Counter(tokens).most_common(top_n), columns=['Word', 'Frequency'])
-        if groupby_column:
-            top_n_df[groupby_column] = group_name  # Add group name if grouping
-        
-        top_words_list.append(top_n_df)
+    axes = axes.flatten()
 
-        sns.barplot(data=top_n_df, x='Frequency', y='Word', hue="Word", legend=False, ax=axes[idx], palette='viridis')
+    for idx, (group_name, group_df) in enumerate(grouped):
+        tokens = _tokenize_texts(group_df[content_column], stop_words_set)
+        top_n_df = _get_top_n_words(tokens, top_n)
+        sns.barplot(
+            data=top_n_df, x='Frequency', y='Word', hue="Word",
+            dodge=False, ax=axes[idx], palette='viridis'
+        )
         title = f'Top {top_n} Words in {groupby_column}: {group_name}' if groupby_column else 'Top Words'
         axes[idx].set_title(title)
         axes[idx].set_xlabel('Frequency')
         axes[idx].set_ylabel('Word')
-    
+
     plt.tight_layout()
     plt.show()
 
-def count_unique_words(df, groupby_columns, unique_column="Id", content_column='Content', omit_stop_words=True, extra_stopwords=None):
+def _prepare_stopwords(omit_stop_words: bool, extra_stopwords: Optional[Set[str]]) -> Set[str]:
     """
-    Counts unique words that appear across different categories (e.g., IDs, participants) within specified groupings,
-    excluding stopwords.
+    Prepare the set of stopwords.
 
     Parameters:
-    - df (pd.DataFrame): The DataFrame containing the data.
-    - groupby_columns (list of str): List of column names to group by (e.g., ['Experiment', 'Condition']).
-    - unique_column (str): Column name for the unique identifier (e.g., ID).
-    - content_column (str): Column name for the text content.
-    - omit_stop_words (bool): Whether to remove English stopwords.
-    - extra_stopwords (set of str, optional): Set of additional words to exclude from the count.
+    - omit_stop_words (bool): Whether to include English stopwords.
+    - extra_stopwords (set of str, optional): Additional stopwords to include.
 
     Returns:
-    - pd.DataFrame: A DataFrame with columns specified in `groupby_columns` plus 'Word' and 'Participant_Count'.
-                    'Participant_Count' indicates how many unique IDs used each word.
+    - Set[str]: Set of stopwords.
     """
-    # Set up stopwords
     stop_words_set = set(stopwords.words('english')) if omit_stop_words else set()
-    stop_words_set.update(extra_stopwords or [])  # Add any additional stopwords if provided
+    if extra_stopwords:
+        stop_words_set.update(extra_stopwords)
+    return stop_words_set
 
-    # Initialize a list to store results
-    results = []
+def _tokenize_texts(texts: pd.Series, stop_words_set: Set[str]) -> List[str]:
+    """
+    Tokenize a series of texts into words, excluding stopwords and punctuation.
 
-    # Function to clean and tokenize text
-    def tokenize(text):
-        tokens = []
+    Parameters:
+    - texts (pd.Series): Series of text strings.
+    - stop_words_set (set of str): Set of stopwords to exclude.
+
+    Returns:
+    - List[str]: List of cleaned tokens.
+    """
+    tokens = []
+    lemmatizer = WordNetLemmatizer()
+    for text in texts.dropna():
         for word in text.split():
             word_clean = word.strip(string.punctuation).lower()
             if word_clean and word_clean not in stop_words_set:
-                tokens.append(word_clean)
-        return tokens
+                lemma = lemmatizer.lemmatize(word_clean)
+                tokens.append(lemma)
+    return tokens
 
-    # Group by specified columns
+def _get_top_n_words(tokens: List[str], top_n: int) -> pd.DataFrame:
+    """
+    Get the top N words from a list of tokens.
+
+    Parameters:
+    - tokens (List[str]): List of word tokens.
+    - top_n (int): Number of top words to return.
+
+    Returns:
+    - pd.DataFrame: DataFrame containing top words and their frequencies.
+    """
+    top_n_words = Counter(tokens).most_common(top_n)
+    return pd.DataFrame(top_n_words, columns=['Word', 'Frequency'])
+
+def count_unique_words(
+    df: pd.DataFrame,
+    groupby_columns: List[str],
+    unique_column: str = "Id",
+    content_column: str = 'Content',
+    omit_stop_words: bool = True,
+    extra_stopwords: Optional[Set[str]] = None
+) -> pd.DataFrame:
+    """
+    Counts unique words that appear across different categories within specified groupings.
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame containing the data.
+    - groupby_columns (list of str): List of column names to group by.
+    - unique_column (str): Column name for the unique identifier (e.g., ID).
+    - content_column (str): Column name for the text content.
+    - omit_stop_words (bool): Whether to remove English stopwords.
+    - extra_stopwords (set of str, optional): Additional words to exclude.
+
+    Returns:
+    - pd.DataFrame: DataFrame with group columns, 'Word', and 'Participant_Count'.
+    """
+    stop_words_set = _prepare_stopwords(omit_stop_words, extra_stopwords)
+    results = []
+
     for group_values, group in df.groupby(groupby_columns):
-        # Dictionary to count words across unique IDs
         word_participant_count = Counter()
-
-        # Group by unique participant identifier to get unique words per participant
         for participant_id, participant_data in group.groupby(unique_column):
-            #print(participant_id)
-            # Collect unique words used by this participant
             unique_words = set()
             for content in participant_data[content_column].dropna():
-                # Filter out stopwords
-                filtered_words = tokenize(content)
-                unique_words.update(filtered_words)
-            
-            # Update word counts across participants
+                unique_words.update(_tokenize_text(content, stop_words_set))
             word_participant_count.update(unique_words)
-        
-        # Prepare a dictionary of group values (e.g., Experiment and Condition)
         group_dict = dict(zip(groupby_columns, group_values)) if isinstance(group_values, tuple) else {groupby_columns[0]: group_values}
-        
-        # Append results with the group values, word, and participant count
         for word, count in word_participant_count.items():
             row = {**group_dict, 'Word': word, 'Participant_Count': count}
             results.append(row)
-    
-    # Convert results to DataFrame
     results_df = pd.DataFrame(results)
     return results_df
 
+def _tokenize_text(text: str, stop_words_set: Set[str]) -> Set[str]:
+    """
+    Tokenize a single text into unique words, excluding stopwords and punctuation.
 
-def generate_word_clouds(df, groupby_columns=None, filter_values=None, max_words=50):
-    """
-    Generates word clouds based on participant counts for each unique combination of the specified grouping columns.
-    
     Parameters:
-    - df (pd.DataFrame): The DataFrame containing unique word counts (e.g., `unique_words_df`).
-    - groupby_columns (list of str): List of columns to group by (e.g., ['Experiment', 'Condition']).
-    - filter_values (list of lists): Specific values to filter by, where each inner list corresponds to the values
-      for the corresponding column in `groupby_columns`.
+    - text (str): Text string to tokenize.
+    - stop_words_set (set of str): Set of stopwords to exclude.
+
+    Returns:
+    - Set[str]: Set of unique cleaned tokens.
     """
-    # Apply filtering based on filter_values if provided
-    if filter_values:
+    tokens = set()
+    lemmatizer = WordNetLemmatizer()
+    for word in text.split():
+        word_clean = word.strip(string.punctuation).lower()
+        if word_clean and word_clean not in stop_words_set:
+            lemma = lemmatizer.lemmatize(word_clean)
+            tokens.add(lemma)
+    return tokens
+
+def generate_word_clouds(
+    df: pd.DataFrame,
+    groupby_columns: Optional[List[str]] = None,
+    filter_values: Optional[List[List[str]]] = None,
+    max_words: int = 50
+):
+    """
+    Generates word clouds based on participant counts for each unique combination
+    of the specified grouping columns.
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame containing unique word counts.
+    - groupby_columns (list of str, optional): List of columns to group by.
+    - filter_values (list of lists, optional): Specific values to filter by.
+    - max_words (int): Maximum number of words to display in the word cloud.
+    """
+    if filter_values and groupby_columns:
         for i, column in enumerate(groupby_columns):
-            if i < len(filter_values) and filter_values[i]:  # Check if filter is provided for this column
+            if i < len(filter_values) and filter_values[i]:
                 df = df[df[column].isin(filter_values[i])]
 
-    # If no grouping columns are specified, create a single word cloud for the entire dataset
-    if not groupby_columns:
-        groups = [(None, df)]
-    else:
-        # Group by specified columns
-        groups = df.groupby(groupby_columns)
+    groups = df.groupby(groupby_columns) if groupby_columns else [(None, df)]
 
-    # Iterate over each group and generate a word cloud
     for group_values, group in groups:
-        # Create a dictionary of words and their participant counts for this group
         word_counts = dict(zip(group['Word'], group['Participant_Count']))
-        
-        # Generate the word cloud
         wordcloud = WordCloud(
             width=800, height=400,
             background_color='white',
@@ -386,17 +404,10 @@ def generate_word_clouds(df, groupby_columns=None, filter_values=None, max_words
             contour_width=1,
             contour_color='black'
         ).generate_from_frequencies(word_counts)
-        
-        # Display the word cloud
+
         plt.figure(figsize=(10, 6))
         plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')  # Hide the axes
-        
-        # Create a title based on group values
-        if groupby_columns:
-            title = ", ".join(f"{col}: {val}" for col, val in zip(groupby_columns, group_values))
-        else:
-            title = "Word Cloud"
-        
+        plt.axis('off')
+        title = ", ".join(f"{col}: {val}" for col, val in zip(groupby_columns, group_values)) if groupby_columns else "Word Cloud"
         plt.title(title)
         plt.show()
