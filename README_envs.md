@@ -3,6 +3,9 @@
 - analyis
 - evaluation
 
+conda remove -n MC --all
+conda remove -n MC --all
+
 ## Create env
 
 ```
@@ -16,17 +19,24 @@ pip install seaborn
 pip install nltk
 pip install openpyxl
 pip install wordcloud
+pip install bertopic
 ```
-# Clusters
-pip install scikit-learn
-pip install sentence_transformers
-
-??
-pip install ipywidgets --upgrade
 
 # Topic
 conda create --name topic python=3.10 --yes
 conda activate topic
+conda install ipykernel -y
+conda install pandas  -y
+conda install matplotlib -y
+conda install seaborn -y
+conda install wordcloud -y
+conda install nltk -y
+pip install bertopic
+pip install bertopic[spacy]
+python -m spacy download en_core_web_sm
+
+
+
 conda install -c conda-forge gensim  --yes
 conda install numpy  --yes
 conda install scikit-learn --yes
@@ -35,16 +45,8 @@ conda install matplotlib  --yes
 conda install pandas  --yes
 conda install seaborn  --yes
 conda install nltk  --yes
-pip install sentence-transformers
-
-
-
-
-
-
-
-
-
+conda install wordcloud -y
+pip install bertopic
 
 # Set-Up for Translation (Text-to-Text)
 
@@ -61,4 +63,26 @@ pip install transformers
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install sentencepiece
 pip install protobuf
+```
+
+## translate_eval
+
+```
+conda create -n translation_eval python=3.9 -y
+conda activate translation_eval
+conda install -c conda-forge ipykernel
+conda install sacrebleu -yes
+conda install pandas nltk -y
+
+pip install --upgrade pip  # ensures that pip is current
+git clone https://github.com/google-research/bleurt.git
+cd bleurt
+pip install .
+
+wget https://storage.googleapis.com/bleurt-oss/20/BLEURT-20.zip
+unzip BLEURT-20.zip -d bleurt_checkpoints
+
+
+
+
 ```

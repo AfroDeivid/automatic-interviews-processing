@@ -85,7 +85,7 @@ def organize_csv_files_by_experiment(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None):
+def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None, utterance=False):
     for subdir, _, files in os.walk(raw_folder):
         for file in files:
             if file.endswith(".csv"):
@@ -117,6 +117,9 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                 if conditions is not None:
                     data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
                     data["Order Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Order Condition"].values[0]
+                if utterance:
+                    add_utterance_index_from_csv(raw_file_path, destination_file_path)
+                    continue
                 
                 data.to_csv(destination_file_path, index=False)
 
@@ -245,6 +248,50 @@ def assign_roles(data, file_name= None):
     #print(f"File '{file_name}': {scores_df}")   
     
     return df, scores_df
+
+def add_utterance_index_from_csv(
+    input_csv: str,
+    output_csv: str,
+    speaker_column: str = 'Speaker',
+    file_column: str = 'File Name'
+):
+    """
+    Adds an `utterance_index` column to the input CSV file, tracking when an utterance changes.
+    
+    Parameters:
+    - input_csv (str): Path to the input CSV file.
+    - output_csv (str): Path to save the output CSV with the new column.
+    - speaker_column (str): Column indicating the speaker.
+    - file_column (str): Column identifying the file (unique identifier for conversations).
+    
+    Returns:
+    - None: Writes the modified CSV to `output_csv`.
+    """
+    with open(input_csv, mode='r', encoding='utf-8') as infile, \
+         open(output_csv, mode='w', newline='', encoding='utf-8') as outfile:
+        
+        reader = csv.DictReader(infile)
+        fieldnames = reader.fieldnames + ['utterance_index']
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        previous_speaker = None
+        previous_file = None
+        utterance_index = -1
+
+        for row in reader:
+            current_speaker = row.get(speaker_column, '').strip()
+            current_file = row.get(file_column, '').strip()
+
+            # If the speaker or file changes, increment the utterance index
+            if current_file != previous_file or current_speaker != previous_speaker:
+                utterance_index += 1
+                previous_file = current_file
+                previous_speaker = current_speaker
+
+            # Add the utterance index to the row
+            row['utterance_index'] = utterance_index
+            writer.writerow(row)
 
 
 def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timestamps=False):

@@ -6,7 +6,8 @@ import torch
 from tqdm import tqdm
 import re
 
-# Function to read the Word document and extract dialogue
+
+# Function docx_to_csv
 def extract_dialogue_from_docx(docx_file):
     separator = ":"
     alternative_separators = [";","."]
@@ -105,8 +106,8 @@ def docx_to_csv(docx_file, output_directory="results", data_directory="data"):
 
     return csv_file
 
+# Function translations
 def translation(source_lang, target_lang, text, model, processor, use_cuda = True):
-
     if use_cuda:
         text_inputs = processor(text, return_tensors="pt", src_lang=source_lang).to("cuda")
     else:
@@ -117,127 +118,167 @@ def translation(source_lang, target_lang, text, model, processor, use_cuda = Tru
 
     return translated_text
 
+def split_text_into_chunks(text, max_tokens, processor, src_lang):
+    """
+    Splits a given text into smaller chunks of uterances (sentence) based on a maximum token limit.
 
-def split_text_into_chunks(input_csv, max_tokens, processor, src_lang):
+    Parameters:
+    - text (str): The text to be split into chunks.
+    - max_tokens (int): Maximum number of tokens per chunk.
+    - processor: Tokenizer/processor to estimate token counts.
+    - src_lang (str): Source language code.
+
+    Returns:
+    - chunks (list of str): A list of text chunks that respect the token limit.
+    """
+    sentences = re.split(r'(?<=[.!?])\s+', text)  # Split text into sentences
     chunks = []
     current_chunk = ''
-    add_speaker_label = True  # Flag to control when to add the speaker label
 
-    with open(input_csv, mode='r', encoding='utf-8') as infile:
-        reader = csv.DictReader(infile)
-        for row in reader:
-            speaker = row['Speaker']
-            text = row['Text']
-            
-            # Only add the speaker label if it's a new chunk or a new row
-            if add_speaker_label:
-                text_with_label = f"[{speaker}]: {text}"
-            else:
-                text_with_label = text  # Skip adding speaker label if continuing the same row
+    for sentence in sentences:
+        combined_text = (current_chunk + ' ' + sentence).strip()
+        tokens = processor(combined_text, return_tensors="pt", src_lang=src_lang)
+        num_tokens = len(tokens['input_ids'][0])
 
-            # Split text into sentences for controlled chunking
-            sentences = re.split(r'(?<=[.!?])\s+', text_with_label)
-            for sentence in sentences:
-                # Estimate tokens if we add the new sentence
-                combined_text = (current_chunk + " " + sentence).strip()
-                tokens = processor(combined_text, return_tensors="pt", src_lang=src_lang)
-                num_tokens = len(tokens['input_ids'][0])
+        if num_tokens <= max_tokens:
+            current_chunk = combined_text  # Add sentence to current chunk
+        else:
+            if current_chunk:
+                chunks.append(current_chunk)  # Save the current chunk
+            current_chunk = sentence.strip()  # Start a new chunk
 
-                if num_tokens <= max_tokens:
-                    current_chunk = combined_text  # Continue building the chunk
-                    add_speaker_label = False  # Do not add speaker label again for this row
-                else:
-                    # Add the current chunk to the list if it reaches the limit
-                    chunks.append(current_chunk.strip())
-                    # Start a new chunk with the current sentence (without speaker label)
-                    current_chunk = sentence.strip()
-                    add_speaker_label = True  # Reset to add speaker label for the next row
-
-            # Reset label addition for the next row
-            add_speaker_label = True
-
-        # Add the last chunk if it exists
-        if current_chunk:
-            chunks.append(current_chunk.strip())
+    # Add the last chunk if any
+    if current_chunk:
+        chunks.append(current_chunk)
 
     return chunks
 
+def translate_by_row_csv_with_chunking(input_csv, source_lang, target_lang, model, processor, max_tokens, use_cuda=True):
+    """
+    Translates the 'Text' column of a CSV file row by row, splitting long text into smaller chunks for translation.
 
-def parse_and_write_translated_text(translated_chunks, output_csv):
-    dialogue = []
-    pattern = r'\[(.*?)\]:\s*(.*?)(?=\[|$)' # Regex pattern to match speaker and text
-    for translated_chunk in translated_chunks:
-        matches = re.findall(pattern, translated_chunk, re.DOTALL)
-        for speaker, text in matches:
-            dialogue.append({'Speaker': speaker.strip(), 'Translated_Text': text.strip()})
-    # Write to CSV
-    with open(output_csv, mode='w', newline='', encoding='utf-8') as outfile:
-        fieldnames = ['Speaker', 'Translated_Text']
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for turn in dialogue:
-            writer.writerow(turn)
+    Parameters:
+    - input_csv (str): Path to the input CSV file.
+    - source_lang (str): Source language code.
+    - target_lang (str): Target language code.
+    - model: The translation model.
+    - processor: Tokenizer/processor associated with the model.
+    - max_tokens (int): Maximum number of tokens per chunk.
+    - use_cuda (bool): Whether to use GPU acceleration.
 
-def translate_with_chunks(input_csv, source_lang, target_lang, model, processor, use_cuda=True, buffer_size=200):
-
-    # Split the text into chunks for context & performance reasons.
-    max_length = 200 # Minus a buffer for special tokens or potential expansion during translation.
-    chunks = split_text_into_chunks(input_csv, max_length, processor, source_lang)
-    print(f"Number of chunks: {len(chunks)}")
-    for text in chunks:
-        tokens = processor(text, return_tensors="pt", src_lang=source_lang)
-        print(f"Number of tokens: {len(tokens['input_ids'][0])}")
-
-    # Translate the chunks
-    translated_chunks = []
-    for chunk in chunks:
-        translated_text = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
-        translated_chunks.append(translated_text)
-
-    # Parse and write the translated text
-    output_csv = f"{os.path.splitext(input_csv)[0]}_{source_lang}_to_{target_lang}.csv"
-    parse_and_write_translated_text(translated_chunks, output_csv)
-
-# CSV translation function with line-by-line saving
-def translate_by_row_csv(input_csv, source_lang, target_lang, model, processor, use_cuda = True):
+    Output:
+    - Saves a new CSV file with translated text while maintaining row structure.
+    """
     encoding = 'utf-8'
-    output_csv = f"{os.path.splitext(input_csv)[0]}_{target_lang}.csv"
 
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(input_csv), ".."))
+    output_folder = os.path.join(parent_dir, f"translation_{source_lang}_to_{target_lang}")
+    os.makedirs(output_folder, exist_ok=True)
+    output_csv = os.path.join(output_folder, f"{os.path.splitext(os.path.basename(input_csv))[0]}.csv")
+
+    # Ensure CUDA is available if requested
     use_cuda = use_cuda and torch.cuda.is_available()
 
-    # Count the number of rows already processed in the output file
-    processed_rows = 0
-    try:
-        with open(output_csv, mode='r', encoding=encoding) as outfile:
-            reader = csv.reader(outfile)
-            processed_rows = sum(1 for row in reader) - 1  # Subtract 1 for the header row
-    except FileNotFoundError:
-        pass
+    # Count total rows for the progress bar
+    with open(input_csv, mode='r', encoding='utf-8') as infile:
+        total_rows = sum(1 for _ in infile) - 1  # Subtract 1 for the header
 
     # Open the input file for reading
     with open(input_csv, mode='r', encoding=encoding) as infile:
         reader = csv.DictReader(infile)
 
-        # Open the output file in append mode so that progress is saved after each row
-        with open(output_csv, mode='a', newline='', encoding=encoding) as outfile:
+        # Open the output file for writing
+        with open(output_csv, mode='w', newline='', encoding=encoding) as outfile:
             writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Translated_Text"])
-    
-            # Check if the file is empty to avoid writing headers multiple times
-            if infile.tell() == 0: # File is empty
-                writer.writeheader() # Header == Columns names
-  
-            # Skip the already processed rows in the input file
-            for _ in range(processed_rows):
-                next(reader)
-            
-            # Use tqdm to display a progress bar
-            rows = list(reader)
-            for row in tqdm(rows, desc="Translating", unit="row"):
+            writer.writeheader()
+
+            # Process each row individually
+            for row in tqdm(reader, desc="Translating", total=total_rows):
                 speaker = row["Speaker"]
                 text = row["Text"]
 
-                # Translate the text
-                translated_text = translation(source_lang, target_lang, text, model, processor, use_cuda)
+                # Split the text into chunks
+                chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
+
+                # Translate each chunk
+                translated_chunks = []
+                for chunk in chunks:
+                    translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
+                    translated_chunks.append(translated_chunk)
+
+                # Reassemble the translated chunks
+                translated_text = ' '.join(translated_chunks)
 
                 # Write the speaker and translated text to the new CSV file immediately
-                writer.writerow({"Speaker": speaker, "Translated_Text": translated_text})
+                writer.writerow({"Speaker": speaker, "Text": translated_text})
+
+    print(f"Translation completed. Output saved to {output_csv}")
+
+def translate_folder(input_folder, source_lang, target_lang, model, processor, max_tokens, override=False, use_cuda=True):
+    """
+    Translates all CSV files in a folder, splitting long text into smaller chunks for translation.
+
+    Parameters:
+    - input_folder (str): Path to the folder containing input CSV files.
+    - source_lang (str): Source language code.
+    - target_lang (str): Target language code.
+    - model: The translation model.
+    - processor: Tokenizer/processor associated with the model.
+    - max_tokens (int): Maximum number of tokens per chunk.
+    - override (bool): Whether to re-translate files that already have an output.
+    - use_cuda (bool): Whether to use GPU acceleration.
+
+    Output:
+    - Translates all files in the folder, saving outputs in a new folder.
+    """
+    encoding = 'utf-8'
+
+    # Create the output folder
+    parent_dir = os.path.abspath(os.path.join(input_folder, ".."))
+    output_folder = os.path.join(parent_dir, f"translation_{source_lang}_to_{target_lang}")
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Find all CSV files in the input folder
+    input_files = [f for f in os.listdir(input_folder) if f.endswith('.csv')]
+
+    for input_file in tqdm(input_files, desc="Processing Files"):
+        input_path = os.path.join(input_folder, input_file)
+        output_path = os.path.join(output_folder, input_file)
+
+        # Skip translation if override is False and output file already exists
+        if not override and os.path.exists(output_path):
+            print(f"Skipping {input_file}, output already exists.")
+            continue
+
+        # Count total rows for the progress bar
+        with open(input_path, mode='r', encoding=encoding) as infile:
+            total_rows = sum(1 for _ in infile) - 1  # Subtract 1 for the header
+
+        # Translate file row by row
+        with open(input_path, mode='r', encoding=encoding) as infile:
+            reader = csv.DictReader(infile)
+
+            with open(output_path, mode='w', newline='', encoding=encoding) as outfile:
+                writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Translated_Text"])
+                writer.writeheader()
+
+                for row in tqdm(reader, desc=f"Translating {input_file}", total=total_rows):
+                    speaker = row["Speaker"]
+                    text = row["Text"]
+
+                    # Split text into chunks
+                    chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
+
+                    # Translate each chunk
+                    translated_chunks = []
+                    for chunk in chunks:
+                        translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
+                        translated_chunks.append(translated_chunk)
+
+                    # Reassemble the translated chunks
+                    translated_text = ' '.join(translated_chunks)
+
+                    # Write the translated row
+                    writer.writerow({"Speaker": speaker, "Translated_Text": translated_text})
+
+        print(f"Translation completed for {input_file}. Output saved to {output_path}.")
