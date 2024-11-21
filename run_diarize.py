@@ -6,7 +6,7 @@ import argparse
 from src.utils.format_helpers import get_files, convert_str_to_csv
 from src.utils.preprocessing_helpers import preprocessing_csv
 
-def process_audio_file(audio_file, whisper_model, language, task):
+def process_audio_file(audio_file, whisper_model, language, task=None):
     """Process a single audio file with the diarization script."""
     print(f"Processing {audio_file}...")
 
@@ -97,8 +97,12 @@ def main():
     print("Parse Task: ", args.task)
 
     # Process each audio file
-    for audio_file in audio_files:
-        process_audio_file(audio_file, args.whisper_model, args.language, args.task)
+    if args.task is not None:
+        for audio_file in audio_files:
+            process_audio_file(audio_file, args.whisper_model, args.language, args.task)
+    else:
+        for audio_file in audio_files:
+            process_audio_file(audio_file, args.whisper_model, args.language)
 
 if __name__ == "__main__":
     main()
