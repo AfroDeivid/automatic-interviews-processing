@@ -17,10 +17,9 @@ def process_audio_file(audio_file, whisper_model, language, task=None):
         "python", "src\whisper_diarization\diarize.py",
         "-a", audio_file,
         "--whisper-model", whisper_model,
-        "--language", language
+        "--language", language,
+        "--task", task,
     ]
-    if task is not None:
-        command.extend(["--task", task])
 
     # Run the Python script
     subprocess.run(command)
@@ -71,7 +70,7 @@ def main():
     parser.add_argument(
         "--task",
         type=str,
-        default=None,
+        default="transcribe",
         choices=["transcribe", "translate"],
         help="Task to execute (transcribe or translate). Specify None to follow the 'language' argument; "
             "it will translate when the audio does not match the specified language, useful for multilingual audios. "
@@ -97,12 +96,8 @@ def main():
     print("Parse Task: ", args.task)
 
     # Process each audio file
-    if args.task is not None:
-        for audio_file in audio_files:
-            process_audio_file(audio_file, args.whisper_model, args.language, args.task)
-    else:
-        for audio_file in audio_files:
-            process_audio_file(audio_file, args.whisper_model, args.language)
+    for audio_file in audio_files:
+        process_audio_file(audio_file, args.whisper_model, args.language, args.task)
 
 if __name__ == "__main__":
     main()
