@@ -123,40 +123,50 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                 
                 data.to_csv(destination_file_path, index=False)
 
-# Function to remove filler words and clean the text
-def simpler_clean(text, filler_words = None):
-
-    # Remove filler words from the text
-    if filler_words :
-        filler_words_pattern = r'\b(' + '|'.join(map(re.escape, filler_words)) + r')\b'
-        text = re.sub(filler_words_pattern, '', text, flags=re.IGNORECASE)
-    # If there is "-" alone after removing of filler words, remove it
-    text = re.sub(r'\b-\b', '', text)
-
-    # If there is two words which repeat consecutively, remove one of them (ignoring case)
-    text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text, flags=re.IGNORECASE)
-
-    ## Visual cleaning
-    # If there only spaces, return None
-    if text.isspace():
+def visual_clean(text):
+    """
+    Cleans the text visually by applying common formatting rules for readability.
+    """
+    # Return None if the input text is None or contains only spaces
+    if not text or text.isspace():
         return None
+    
     # Convert lowercase "i" to uppercase "I" when it stands alone
     text = re.sub(r'\bi\b', 'I', text)
-    # Remove double spaces
+    # Remove multiple consecutive spaces
     text = re.sub(r'\s+', ' ', text)
-    # If there is empty spaces at the beginning or end of the text, remove them
+    # Remove any leading or trailing spaces
     text = text.strip()
-    # If there is a point, put on upper case the next character
-    text = re.sub(r'\.\s+(\w)', lambda x: x.group(0).upper(), text)
-    # Put the first character of the text on upper case
-    text = text[0].upper() + text[1:]
-    # Put a point at the end of the text if there isn't a punctuation mark
+    # Capitalize the first letter of the text
+    if text:
+        text = text[0].upper() + text[1:]
+    # Ensure proper capitalization after periods
+    text = re.sub(r'(\.\s+)(\w)', lambda match: match.group(1) + match.group(2).upper(), text)
+    # Add a period at the end of the text if missing and if it's not already punctuated
     if text[-1] not in ['.', '!', '?']:
         text += '.'
-    # Put a space between words and punctuation marks other than " . "
+    # Add a space between words and punctuation marks (e.g., "word!" -> "word !") others than " . "
     text = re.sub(r'(\w)([!?])', r'\1 \2', text)
-        
+    
     return text
+
+def simpler_clean(text, filler_words=None):
+    """
+    Cleans the text by removing filler words and applying visual cleaning.
+    """
+
+    # Remove filler words from the text
+    if filler_words:
+        filler_words_pattern = r'\b(' + '|'.join(map(re.escape, filler_words)) + r')\b'
+        text = re.sub(filler_words_pattern, '', text, flags=re.IGNORECASE)
+        # If there is a "-" alone after removing filler words, remove it
+        text = re.sub(r'\b-\b', '', text)
+        # Remove consecutive repeated words (ignoring case)
+        text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text, flags=re.IGNORECASE)
+
+    # Apply visual cleaning for further adjustments
+    return visual_clean(text)
+
 
 def assign_roles(data, file_name= None):
     """
@@ -332,10 +342,14 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timest
             else:
                 if previous_speaker is not None:
                     # Write the previous dialogue buffer with optional timestamps
+                    dialogue_buffer = visual_clean(dialogue_buffer)
                     if include_timestamps and start_time and end_time:
-                        dialogue_line = f"{start_time} --> {end_time}\n{previous_speaker}: {dialogue_buffer}\n\n"
+                        dialogue_line = (
+                                    f"{start_time} --> {end_time}\n"
+                                    f"[{previous_speaker}]: {dialogue_buffer}\n\n"
+                        )
                     else:
-                        dialogue_line = f"{previous_speaker}: {dialogue_buffer}\n\n"
+                        dialogue_line = f"[{previous_speaker}]: {dialogue_buffer}\n\n"
                     txtfile.write(dialogue_line)
                 
                 # Start a new dialogue buffer
@@ -346,10 +360,14 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timest
         
         # Write the last dialogue buffer after the loop ends
         if previous_speaker is not None and dialogue_buffer:
+            dialogue_buffer = visual_clean(dialogue_buffer)
             if include_timestamps and start_time and end_time:
-                dialogue_line = f"{start_time} --> {end_time}\n{previous_speaker}: {dialogue_buffer}"
+                dialogue_line = (
+                            f"{start_time} --> {end_time}\n"
+                            f"[{previous_speaker}]: {dialogue_buffer}\n\n"
+                )
             else:
-                dialogue_line = f"{previous_speaker}: {dialogue_buffer}"
+                dialogue_line = f"[{previous_speaker}]: {dialogue_buffer}\n\n"
             txtfile.write(dialogue_line)
 
 
@@ -394,17 +412,18 @@ def convert_csv_to_dialogue_with_original(input_csv, output_txt, include_timesta
                     end_time = row_end_time  # Update the end time
             else:
                 if previous_speaker is not None:
+                    dialogue_buffer_content = visual_clean(dialogue_buffer_content)
                     # Write the previous dialogue buffers with timestamps for Content
                     if include_timestamps and start_time and end_time:
                         dialogue_line = (
                             f"{start_time} --> {end_time}\n"
-                            f"{previous_speaker}: {dialogue_buffer_content}\n\n"
-                            f"Original Content: {dialogue_buffer_original}\n\n"
+                            f"[{previous_speaker}]: {dialogue_buffer_content}\n\n"
+                            f"[Original Content]: {dialogue_buffer_original}\n\n"
                         )
                     else:
                         dialogue_line = (
-                            f"Speaker {previous_speaker}: {dialogue_buffer_content}\n"
-                            f"Original Content: {dialogue_buffer_original}\n\n"
+                            f"[{previous_speaker}]: {dialogue_buffer_content}\n"
+                            f"[Original Content]: {dialogue_buffer_original}\n\n"
                         )
                     txtfile.write(dialogue_line)
                 
@@ -417,21 +436,19 @@ def convert_csv_to_dialogue_with_original(input_csv, output_txt, include_timesta
 
         # Write the last dialogue buffer after the loop ends
         if previous_speaker is not None and dialogue_buffer_content:
+            dialogue_buffer_content = visual_clean(dialogue_buffer_content)
             if include_timestamps and start_time and end_time:
                 dialogue_line = (
                     f"{start_time} --> {end_time}\n"
-                    f"Speaker {previous_speaker}:\n"
-                    f"Content: {dialogue_buffer_content}\n"
-                    f"Original Content: {dialogue_buffer_original}\n"
+                    f"[{previous_speaker}]: {dialogue_buffer_content}\n\n"
+                    f"[Original Content]: {dialogue_buffer_original}\n\n"
                 )
             else:
                 dialogue_line = (
-                    f"Speaker {previous_speaker}:\n"
-                    f"Content: {dialogue_buffer_content}\n"
-                    f"Original Content: {dialogue_buffer_original}\n"
+                    f"[{previous_speaker}]: {dialogue_buffer_content}\n"
+                    f"[Original Content]: {dialogue_buffer_original}\n\n"
                 )
             txtfile.write(dialogue_line)
-
 
 
 def merge_csv_in_subdirectories(source_dir, output_dir):
