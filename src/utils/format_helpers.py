@@ -3,6 +3,7 @@ import re
 import csv
 from pydub.utils import mediainfo
 import pandas as pd
+from datetime import timedelta
 
 def get_files(directory, extensions):
     """Get a list of files in the specified directory and its subdirectories with given extensions."""
@@ -57,6 +58,13 @@ def convert_str_to_csv(str_file, experiment='Not Specified'):
                 'Content': text.replace('\n', '')
             })
 
+def format_timedelta(td):
+    """Format a timedelta object as HH:MM:SS."""
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
 def analyze_audio_files(directories, extensions):
     """Analyze audio files and collect their properties."""
     data = []
@@ -66,10 +74,9 @@ def analyze_audio_files(directories, extensions):
             info = mediainfo(audio_file)
 
             # Duration
-            duration = round(float(info['duration']), 2) if 'duration' in info else 0
-            duration_min, duration_sec = divmod(int(duration), 60)
-            duration_hr, duration_min = divmod(duration_min, 60)
-            duration_string = f"{duration_hr:02d}:{duration_min:02d}:{duration_sec:02d}" # Format as hh:mm:ss
+            duration_seconds = round(float(info['duration']), 2) if 'duration' in info else 0
+            duration_timedelta = timedelta(seconds=duration_seconds)  # Convert to timedelta
+            duration_string = format_timedelta(duration_timedelta)  # Format as HH:MM:SS
 
             # File name
             name, ext = os.path.splitext(os.path.basename(audio_file))
@@ -79,7 +86,8 @@ def analyze_audio_files(directories, extensions):
                 "Format": ext,
                 "ID": extract_id(name),
                 'Duration': duration_string,
-                'Duration_sec': duration,
+                'Duration_timedelta': duration_timedelta,  # Keep timedelta for calculations
+                'Duration_sec': duration_seconds,
                 'Experiment': os.path.basename(directory),
             })
     

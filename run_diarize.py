@@ -40,8 +40,7 @@ def process_audio_file(audio_file, whisper_model, language, task=None):
 
     convert_str_to_csv(str_file, experiment_name)
 
-    # Preprocessing version of the csv, inside `results/processed`
-    preprocessing_csv(str_file)
+    return str_file
 
 
 def main():
@@ -96,8 +95,14 @@ def main():
     print("Parse Task: ", args.task)
 
     # Process each audio file
+    str_files = []
     for audio_file in audio_files:
-        process_audio_file(audio_file, args.whisper_model, args.language, args.task)
+        str_files.append(process_audio_file(audio_file, args.whisper_model, args.language, args.task))
+
+    # Preprocessing version of the csv, inside `results/processed`
+    for str_file in str_files:
+        print(str_file)
+        preprocessing_csv(str_file)
 
 if __name__ == "__main__":
     main()
