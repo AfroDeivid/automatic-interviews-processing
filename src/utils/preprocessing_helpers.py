@@ -450,8 +450,15 @@ def convert_csv_to_dialogue_with_original(input_csv, output_txt, include_timesta
                 )
             txtfile.write(dialogue_line)
 
-
 def merge_csv_in_subdirectories(source_dir, output_dir):
+    """
+    Merge all CSV files in each subdirectory of the source directory and save them as a single file
+    in the output directory.
+
+    Parameters:
+    source_dir (str): Path to the source directory containing subdirectories with CSV files.
+    output_dir (str): Path to the output directory where merged CSV files will be saved.
+    """
     # Ensure the output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -465,8 +472,8 @@ def merge_csv_in_subdirectories(source_dir, output_dir):
         if os.path.isdir(subdir_path):
             csv_files = [f for f in os.listdir(subdir_path) if f.endswith('.csv')]
             
-            # Check if there are exactly two CSV files to merge
-            if len(csv_files) == 2:
+            # Check if there are CSV files to merge
+            if len(csv_files) > 0:
                 csv_paths = [os.path.join(subdir_path, f) for f in csv_files]
                 
                 # Read and concatenate the CSV files
@@ -478,12 +485,12 @@ def merge_csv_in_subdirectories(source_dir, output_dir):
                     merged_file_name = f"{subdir}_merged.csv"
                     merged_file_path = os.path.join(output_dir, merged_file_name)
                     merged_df.to_csv(merged_file_path, index=False)
-                    print(f"Merged files from {subdir_path} into {merged_file_path}")
+                    print(f"Merged {len(csv_files)} files from {subdir_path} into {merged_file_path}")
                 
                 except Exception as e:
                     print(f"Error merging files in {subdir_path}: {e}")
             else:
-                print(f"Skipping {subdir_path}: Expected 2 CSV files, found {len(csv_files)}")
+                print(f"Skipping {subdir_path}: No CSV files found")
 
 def preprocessing_csv(str_file):
     """Create a processed version of the CSV directly from the .str file path."""

@@ -73,6 +73,7 @@ def standardize_data(df):
         'Interviewer 3': 'Interviewer',
         # Add more replacements if necessary
     }
+    df["Speaker_original"] = df["Speaker"]
     df['Speaker'] = df['Speaker'].replace(speaker_replacements)
     print("Standardized speaker labels.")
 

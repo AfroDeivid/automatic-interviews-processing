@@ -189,7 +189,7 @@ def translate_by_row_csv_with_chunking(input_csv, source_lang, target_lang, mode
 
         # Open the output file for writing
         with open(output_csv, mode='w', newline='', encoding=encoding) as outfile:
-            writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Translated_Text"])
+            writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Text"])
             writer.writeheader()
 
             # Process each row individually
@@ -259,7 +259,7 @@ def translate_folder(input_folder, source_lang, target_lang, model, processor, m
             reader = csv.DictReader(infile)
 
             with open(output_path, mode='w', newline='', encoding=encoding) as outfile:
-                writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Translated_Text"])
+                writer = csv.DictWriter(outfile, fieldnames=["Speaker", "Text"])
                 writer.writeheader()
 
                 for row in tqdm(reader, desc=f"Translating {input_file}", total=total_rows):
@@ -279,6 +279,6 @@ def translate_folder(input_folder, source_lang, target_lang, model, processor, m
                     translated_text = ' '.join(translated_chunks)
 
                     # Write the translated row
-                    writer.writerow({"Speaker": speaker, "Translated_Text": translated_text})
+                    writer.writerow({"Speaker": speaker, "Text": translated_text})
 
         print(f"Translation completed for {input_file}. Output saved to {output_path}.")
