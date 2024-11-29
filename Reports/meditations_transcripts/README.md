@@ -23,7 +23,7 @@ Contains the transcripts after preprocessing & manual verication.
 Provides an overview of all the interviews conducted across experiments.
 
 `transcripts_merged.csv` 
-Contains all interview transcripts merged into a single CSV file for analysis. -> **tell about tht e fact that I merged all interviewe in all**
+Contains all interview transcripts merged into a single CSV file for analysis.
 
 # CSV Structure
 

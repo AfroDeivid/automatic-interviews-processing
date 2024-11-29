@@ -15,6 +15,8 @@ pip install ipykernel
 pip install pandas
 pip install pydub
 pip install matplotlib
+conda install plotly -y
+pip install --upgrade nbformat
 pip install seaborn
 pip install nltk
 pip install openpyxl
@@ -47,42 +49,3 @@ conda install seaborn  --yes
 conda install nltk  --yes
 conda install wordcloud -y
 pip install bertopic
-
-# Set-Up for Translation (Text-to-Text)
-
-## Seamless
-
-```
-conda create --name seam python=3.10 --yes
-conda activate seam
-pip install ipykernel
-pip install ipywidgets
-pip install python-docx
-pip install tqdm
-pip install transformers
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install sentencepiece
-pip install protobuf
-```
-
-## translate_eval
-
-```
-conda create -n translation_eval python=3.9 -y
-conda activate translation_eval
-conda install -c conda-forge ipykernel
-conda install sacrebleu -yes
-conda install pandas nltk -y
-
-pip install --upgrade pip  # ensures that pip is current
-git clone https://github.com/google-research/bleurt.git
-cd bleurt
-pip install .
-
-wget https://storage.googleapis.com/bleurt-oss/20/BLEURT-20.zip
-unzip BLEURT-20.zip -d bleurt_checkpoints
-
-
-
-
-```
