@@ -208,7 +208,7 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
     Parameters:
         prediction_folder (str): Path to the folder containing prediction CSV files.
         reference_folder (str): Path to the folder containing reference CSV files.
-        max_insert_length (int, optional): Maximum length for insertions (used in WER calculation).
+        max_insert_length (int, optional): Maximum length for insertions (used in WER calculation), longer insertions are excluded from WER calculation.
         tolerance_replace (int, optional): Tolerance for replacements (used in WER calculation).
         dir_visual (str, optional): Name of the subdirectory to save visual comparison HTML files.
 
@@ -257,7 +257,7 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
 
                 # Combine WER and Diarization metrics
                 combined_metrics = {
-                    'Filename': filename,
+                    'Filename': os.path.splitext(filename)[0],
                     'WER': wer_metrics.get('WER'),
                     'DER': dia_metrics.get('DER'),
                     'Total Words': wer_metrics.get('Total Words'),

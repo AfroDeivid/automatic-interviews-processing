@@ -82,9 +82,9 @@ def analyze_audio_files(directories, extensions):
             name, ext = os.path.splitext(os.path.basename(audio_file))
             
             data.append({
-                'File_name': name,
+                "File Name": name,
                 "Format": ext,
-                "ID": extract_id(name),
+                "Id": extract_id(name),
                 'Duration': duration_string,
                 'Duration_timedelta': duration_timedelta,  # Keep timedelta for calculations
                 'Duration_sec': duration_seconds,

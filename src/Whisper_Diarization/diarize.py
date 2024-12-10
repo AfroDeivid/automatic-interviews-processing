@@ -152,7 +152,6 @@ if args.batch_size > 0:
         language,
         suppress_tokens=suppress_tokens,
         batch_size=args.batch_size,
-        without_timestamps=True,
         task=args.task,
     )
 else:
@@ -160,7 +159,6 @@ else:
         audio_waveform,
         language,
         suppress_tokens=suppress_tokens,
-        without_timestamps=True,
         vad_filter=True,
         task=args.task,
     )

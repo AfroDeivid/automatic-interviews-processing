@@ -19,9 +19,12 @@ Ensure that FFMPEG is added to your system’s PATH.
 
 After ensuring the prerequisites are set up, proceed with creating the folowing environement :
 
+**try if works for cuda version...**
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124**
 ```
 conda create --name wd python=3.10 --yes
 conda activate wd
+pip install cython
 pip install -c constraints.txt -r requirements.txt
 pip install ipykernel
 pip install pandas
@@ -37,17 +40,24 @@ I specified the last commit that I used in the requierements from: put everythin
 
 # Usage
 
+## Preparing Your Data
+
+The pipeline supports nested folder structures, making it easy to process multiple experiments and interviews. To use the pipeline:
+
+- Organize your audio files into main folders, where each main folder corresponds to an experiment (e.g., OBE1, OBE2, Compassion).
+- Subdirectories within each main folder can be used to group sessions, participants, or other logical subdivisions.
+
 ## Transcription & Diarization (Audio-to-Text)
 [`run_diarize.py`](run_diarize.py)
 
 ``conda activate wd1``
 
-- **Transcribe the audio into his original language :** *(specified with --language)* 
+- **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash
 python run_diarize.py -d .\data\OBE1 --whisper-model large-v3 --language en
 ```
 
-- **Transcribe and translate the audio into english :** *(e.g. from french to english)*
+- **Transcribe and translate the audio to english :** *(e.g. from french to english)*
 ```bash
 python run_diarize.py -d .\data\OBE1 --whisper-model large-v3 --language fr --task translate
 ```
@@ -55,6 +65,21 @@ python run_diarize.py -d .\data\OBE1 --whisper-model large-v3 --language fr --ta
 If only ``language`` is specified, the model will attempt to translate any detected language into the specified language.
 
 To improve performance, specify the task as ``translate`` if you know in advance that the audio is in a certain language (e.g., French) and want to translate it into English.
+
+The pipeline will automatically:
+
+- Traverse all subdirectories to locate audio files.
+- Use the main folder name as the experiment name for the Experiment column in the output CSV.
+- Output results for each file in text format and structured CSV format.
+
+## Outputs
+- Text Format: Simplified and easy-to-read files for manual review.
+- CSV Format: A structured format ideal for analysis, with columns such as:
+  - Experiment name (derived from the main folder).
+  - File name.
+  - Participant ID.
+  - Timestamps for each segment.
+  - Speaker roles and transcription content.
 
 # Mentions
 

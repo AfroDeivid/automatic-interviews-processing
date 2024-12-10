@@ -83,7 +83,7 @@ def standardize_data(df):
 
     return df
 
-def calculate_word_char_counts(df):
+def calculate_word_counts(df):
     """
     Calculate word and character counts for each 'Content' entry.
 
@@ -94,32 +94,26 @@ def calculate_word_char_counts(df):
     - pd.DataFrame: DataFrame with added 'Word_Count' and 'Character_Count' columns.
     """
 
-    df['Word_Count'] = df['Content'].apply(lambda x: len(x.split()))
-    df['Character_Count'] = df['Content'].apply(len)
-    print("Calculated 'Word_Count' and 'Character_Count' for each response.")
+    df['Word Count'] = df['Content'].apply(lambda x: len(x.split()))
+    print("Calculated 'Word Count' for each 'Content' entry.")
 
     return df
 
 def aggregate_counts(df, groupby_columns):
     """
-    Aggregate word and character counts based on specified grouping columns.
+    Aggregate word counts based on specified grouping columns.
 
     Parameters:
     - df (pd.DataFrame): The DataFrame containing the data.
     - groupby_columns (list of str): List of column names to group by.
 
     Returns:
-    - pd.DataFrame: Aggregated DataFrame with sum and mean of word and character counts.
+    - pd.DataFrame: Aggregated DataFrame with the sum of word counts.
     """
     
     # Perform the aggregation
-    aggregated = df.groupby(groupby_columns).agg(
-        Word_Count=('Word_Count', 'sum'),
-        Average_Words=('Word_Count', 'mean'),
-        Character_Count=('Character_Count', 'sum'),
-        Average_Characters=('Character_Count', 'mean')
-    ).reset_index()
-    
+    aggregated = df.groupby(groupby_columns).agg({'Word Count': 'sum'}).reset_index()
+
     return aggregated
 
 def stripplot(df,x_column,y_column, hue_column=None):
@@ -128,7 +122,7 @@ def stripplot(df,x_column,y_column, hue_column=None):
     plt.figure(figsize=(10, 6))
     sns.boxplot(x=x_column, y=y_column, data=df, hue=hue_column)
     sns.stripplot(x=x_column, y=y_column, data=df, hue=hue_column, linewidth=1, edgecolor="k",
-                  dodge=True, jitter=False, legend=False)
+                  dodge=True, jitter=True, legend=False)
     plt.title(f'{x_column} Distribution by {y_column}')
     plt.xlabel(x_column)
     plt.ylabel(y_column)

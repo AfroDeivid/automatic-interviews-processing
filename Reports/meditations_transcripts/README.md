@@ -12,11 +12,15 @@ Contains the raw transcripts output by the transcription model.
 *(Link to repository to come)*
 
 `transcripts_per_interviews/` 
-Contains the transcripts after preprocessing & manual verication.
+Contains the transcripts after preprocessing & manual verification.
 - Preprocessing Steps:
     - Removal of filler words and repetitions.
     - Visual cleaning of the text.
     - Prediction of speaker roles.
+- Manual verification:
+    - Correct errors of transcription & diariazation.
+    - Verify role assignments.
+    - Cut unrelated sections.
 - Available in both text and CSV formats.
 
 `overview_interviews.csv` 
@@ -38,7 +42,8 @@ Each row in the dataset corresponds to a speech segment, as captured by the tran
 - **Start Time:** Start timestamp of the speech segment (in HH:MM:SS,SSS format).
 - **End Time:** End timestamp of the speech segment (in HH:MM:SS,SSS format).
 - **Speaker:** The role for the speaker, such as "Participant" or "Interviewer."  
-If multiple interviewers are present, they are labeled with a numerical suffix (e.g., Interviewer 1, Interviewer 2).
+    - If multiple interviewers are present, they are labeled with a numerical suffix (e.g., Interviewer 1, Interviewer 2).
+    - *Note:* Interviewer labels are arbitrary within each interview and do not necessarily represent the same individual across different interviews.
 - **Content:** Transcription of the speech segment.
 
 In this dataset I also manually add:
