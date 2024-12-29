@@ -219,6 +219,44 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
 
 ### Text Analysis Functions
 
+CONTRACTION_MAP = {
+    "n't": "n't",
+    "'ve": "'ve",
+    "'re": "'re",
+    "'ll": "'ll",
+    "'m": "'m",
+    "'d": "'d",
+    "'s": "'s"
+}
+
+def rejoin_contractions(tokens):
+    """
+    After tokenization by word_tokenize, rejoin split contractions.
+    For example, ['do', "n't"] -> ["don't"]
+    """
+    merged_tokens = []
+    skip_next = False
+
+    for i, token in enumerate(tokens):
+        if skip_next:
+            # We skip this token because it was merged with the previous one
+            skip_next = False
+            continue
+
+        if i < len(tokens) - 1:
+            next_token = tokens[i + 1]
+            # If the next token is a known contraction piece, merge them
+            if next_token in CONTRACTION_MAP:
+                merged_tokens.append(token + CONTRACTION_MAP[next_token])
+                skip_next = True  # Skip the next token since we've merged it
+            else:
+                merged_tokens.append(token)
+        else:
+            # For the last token, just append it
+            merged_tokens.append(token)
+
+    return merged_tokens
+
 def preprocess_text(
     text: str,
     lemmatize: bool = True,
@@ -227,34 +265,50 @@ def preprocess_text(
     extra_stopwords: Optional[Set[str]] = None
 ) -> str:
     """
-    Preprocess the input text with options for lemmatization, stopword removal, and n-grams.
+    Preprocess the input text while preserving internal apostrophes (e.g., "I've"),
+    removing stopwords, optionally lemmatizing, and optionally creating n-grams.
     """
+
     if not text:
         return ""
-    # Lowercase and remove punctuation (handles periods, commas, etc.)
-    text = re.sub(r'[^\w\s]', '', text.lower().strip())
-    
-    # Tokenize
-    tokens = word_tokenize(text)
-    
-    # Remove stopwords
-    if remove_stopwords:
-        stop_words = set(stopwords.words('english'))
-        if extra_stopwords:
-            stop_words.update(extra_stopwords)
 
-        tokens = [word for word in tokens if word not in stop_words]
+    # Convert to lowercase
+    text = text.lower().strip()
+
+    # Tokenize the text. This keeps punctuation as separate tokens.
+    tokens = word_tokenize(text)
+
+    # Rejoin contractions like "don't" from "do" "n't"
+    tokens = rejoin_contractions(tokens)
+
+    # Remove punctuation-only tokens
+    tokens = [t.strip(string.punctuation) for t in tokens if t.strip(string.punctuation)]
+
+    # Remove numeric tokens (any token containing a digit)
+    tokens = [t for t in tokens if not any(ch.isdigit() for ch in t)]
     
-    # Lemmatize
+    # Lemmatize first
     if lemmatize:
         lemmatizer = WordNetLemmatizer()
         tokens = [lemmatizer.lemmatize(word) for word in tokens]
-    
-    # Generate n-grams
+
+    # Remove stopwords after lemmatization
+    if remove_stopwords:
+        stop_words = set(stopwords.words('english'))
+        if extra_stopwords:
+            # Normalize extra_stopwords with lemmatization
+            lemmatizer = WordNetLemmatizer()
+            extra_stopwords = {lemmatizer.lemmatize(word.lower()) for word in extra_stopwords}
+            stop_words.update(extra_stopwords)
+
+        tokens = [word for word in tokens if word not in stop_words]
+
+    # Generate n-grams if requested
     if ngrams > 1:
-        tokens = ['_'.join(tokens[i:i+ngrams]) for i in range(len(tokens)-ngrams+1)]
-    
+        tokens = ['_'.join(tokens[i:i+ngrams]) for i in range(len(tokens) - ngrams + 1)]
+
     return ' '.join(tokens)
+
 
 def word_frequency_analysis(
     df: pd.DataFrame,
@@ -343,12 +397,12 @@ def count_unique_words(
     results_df = pd.DataFrame(results)
     return results_df
 
-
 def generate_word_clouds(
     df: pd.DataFrame,
     groupby_columns: Optional[List[str]] = None,
     filter_values: Optional[List[List[str]]] = None,
-    max_words: int = 50
+    max_words: int = 15,
+    min_count: int = 2
 ):
     """
     Generates word clouds based on participant counts for each unique combination
@@ -359,11 +413,15 @@ def generate_word_clouds(
     - groupby_columns (list of str, optional): List of columns to group by.
     - filter_values (list of lists, optional): Specific values to filter by.
     - max_words (int): Maximum number of words to display in the word cloud.
+    - min_count (int): Minimum count of word repetitions to include in the word cloud.
     """
     if filter_values and groupby_columns:
         for i, column in enumerate(groupby_columns):
             if i < len(filter_values) and filter_values[i]:
                 df = df[df[column].isin(filter_values[i])]
+
+    # Filter words based on min_count
+    df = df[df['Participant_Count'] >= min_count]
 
     groups = df.groupby(groupby_columns) if groupby_columns else [(None, df)]
 

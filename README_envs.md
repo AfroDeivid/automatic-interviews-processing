@@ -1,9 +1,3 @@
-# Set-Up for Basics analysis & use of this repo
-- audio_and_experiment
-- analyis
-- evaluation
-
-conda remove -n MC --all
 conda remove -n MC --all
 
 ## Create env
@@ -36,16 +30,4 @@ conda install nltk -y
 pip install bertopic
 pip install bertopic[spacy]
 python -m spacy download en_core_web_sm
-
-
-
-conda install -c conda-forge gensim  --yes
-conda install numpy  --yes
-conda install scikit-learn --yes
-conda install sentence_transformers --yes
-conda install matplotlib  --yes 
-conda install pandas  --yes
-conda install seaborn  --yes
-conda install nltk  --yes
-conda install wordcloud -y
-pip install bertopic
+pip install nbformat --upgrade
