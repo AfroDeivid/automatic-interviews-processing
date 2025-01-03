@@ -1,6 +1,5 @@
 import os
 import glob
-import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -9,14 +8,16 @@ import string
 from collections import Counter
 from typing import Optional, List, Set
 
-from nltk.corpus import stopwords
+from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-# Ensure NLTK resources are downloaded
-#nltk.download('punkt')
-#nltk.download('wordnet')
-#nltk.download('stopwords')
+from nltk.tag import pos_tag
 
+# import nltk
+# nltk.download('stopwords')
+# nltk.download('punkt')  # For word tokenization
+# nltk.download('wordnet')  # For lemmatization
+# nltk.download('averaged_perceptron_tagger')  # For POS tagging
 
 def load_and_combine_csv(directory_path, pattern='*.csv'):
     """
@@ -55,15 +56,9 @@ def load_and_combine_csv(directory_path, pattern='*.csv'):
 
     return combined_df
 
-def standardize_data(df):
+def standardize_speaker_labels(df):
     """
-    Standardize Speaker labels & normalize the DataFrame.
-
-    Parameters:
-    - df (pd.DataFrame): The DataFrame to preprocess.
-
-    Returns:
-    - pd.DataFrame: Cleaned and preprocessed DataFrame.
+    Standardize Speaker labels.
     """
 
     # Standardize Speaker labels (e.g., merge all Interviewers into one category)
@@ -75,11 +70,6 @@ def standardize_data(df):
     }
     df["Speaker_original"] = df["Speaker"]
     df['Speaker'] = df['Speaker'].replace(speaker_replacements)
-    print("Standardized speaker labels.")
-
-    # Normalize text: convert to lowercase and strip whitespace
-    df['Content'] = df['Content'].str.lower().str.strip()
-    print("Normalized text in 'Content' column.")
 
     return df
 
@@ -257,6 +247,32 @@ def rejoin_contractions(tokens):
 
     return merged_tokens
 
+# Function to map NLTK POS tags to WordNet POS tags
+def get_wordnet_pos(tag):
+    """Map POS tag to the format WordNetLemmatizer accepts."""
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN  # Default to noun
+
+# To fix particular lemmatization behavior in NLTK
+# https://stackoverflow.com/questions/33594721/why-nltk-lemmatization-has-wrong-output-even-if-verb-exc-has-added-right-value 
+class CustomWordNetLemmatizer(WordNetLemmatizer):
+    def lemmatize(self, word, pos='n'):
+        """Override the default lemmatize method to prefer specific lemmas."""
+        lemmas = self._morphy(word, pos)
+        # If multiple lemmas exist, prefer 'see' over 'saw' for verbs
+        if pos == wordnet.VERB and word.lower() == "saw":
+            return "see"
+        # Otherwise, return the shortest lemma
+        return min(lemmas, key=len) if lemmas else word
+
 def preprocess_text(
     text: str,
     lemmatize: bool = True,
@@ -264,51 +280,53 @@ def preprocess_text(
     ngrams: int = 1,
     extra_stopwords: Optional[Set[str]] = None
 ) -> str:
-    """
-    Preprocess the input text while preserving internal apostrophes (e.g., "I've"),
-    removing stopwords, optionally lemmatizing, and optionally creating n-grams.
-    """
+    """ Preprocess the input text while preserving internal apostrophes (e.g., "I've"),
+    removing stopwords, optionally lemmatizing, and optionally creating n-grams."""
 
     if not text:
         return ""
 
-    # Convert to lowercase
-    text = text.lower().strip()
-
-    # Tokenize the text. This keeps punctuation as separate tokens.
+    # 1. Tokenize
     tokens = word_tokenize(text)
 
-    # Rejoin contractions like "don't" from "do" "n't"
-    tokens = rejoin_contractions(tokens)
+    # 2. Rejoin contractions, if needed
+    #tokens = rejoin_contractions(tokens)
 
-    # Remove punctuation-only tokens
+    # 3. POS Tagging (on original-case tokens)
+    pos_tags = pos_tag(tokens)
+
+    # 4. Lemmatize using POS tags
+    if lemmatize:
+        lemmatizer = CustomWordNetLemmatizer()
+        tokens = [
+            lemmatizer.lemmatize(token, get_wordnet_pos(tag))
+            for token, tag in pos_tags
+        ]
+
+    # 5. Convert to lowercase (optional, but usually standard)
+    tokens = [t.lower() for t in tokens]
+
+    # 6. Remove punctuation-only tokens
     tokens = [t.strip(string.punctuation) for t in tokens if t.strip(string.punctuation)]
 
-    # Remove numeric tokens (any token containing a digit)
+    # 7. Remove numeric tokens
     tokens = [t for t in tokens if not any(ch.isdigit() for ch in t)]
-    
-    # Lemmatize first
-    if lemmatize:
-        lemmatizer = WordNetLemmatizer()
-        tokens = [lemmatizer.lemmatize(word) for word in tokens]
 
-    # Remove stopwords after lemmatization
+    # 8. Remove stopwords
     if remove_stopwords:
-        stop_words = set(stopwords.words('english'))
+        stop_words = set(stopwords.words("english"))
         if extra_stopwords:
-            # Normalize extra_stopwords with lemmatization
-            lemmatizer = WordNetLemmatizer()
-            extra_stopwords = {lemmatizer.lemmatize(word.lower()) for word in extra_stopwords}
-            stop_words.update(extra_stopwords)
+            stop_words = stop_words.union({w.lower() for w in extra_stopwords})
+        tokens = [t for t in tokens if t not in stop_words]
 
-        tokens = [word for word in tokens if word not in stop_words]
-
-    # Generate n-grams if requested
+    # 9. Generate n-grams if requested
     if ngrams > 1:
-        tokens = ['_'.join(tokens[i:i+ngrams]) for i in range(len(tokens) - ngrams + 1)]
+        tokens = [
+            "_".join(tokens[i : i + ngrams])
+            for i in range(len(tokens) - ngrams + 1)
+        ]
 
-    return ' '.join(tokens)
-
+    return " ".join(tokens)
 
 def word_frequency_analysis(
     df: pd.DataFrame,
