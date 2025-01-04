@@ -2,6 +2,8 @@
 
 This repository provides a scalable and automated pipeline for transcribing and diarizing audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages cutting-edge open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in structured formats like text and CSV files.
 
+![Project Workflow](images/WD_pipeline.png)
+
 # Instalation
 
 ## 1. Prerequisite Installations
@@ -30,13 +32,6 @@ pip install ipykernel
 pip install pandas
 pip install pydub
 ``` 
-### TODO:
-
-- Lock to a Specific Commit to put in the requierements:
-``git+https://github.com/username/repo_name.git@commit_hash
-``
-
-I specified the last commit that I used in the requierements from: put everything in one requierement file
 
 # Usage
 
