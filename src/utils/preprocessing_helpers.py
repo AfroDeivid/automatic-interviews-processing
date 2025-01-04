@@ -85,7 +85,21 @@ def organize_csv_files_by_experiment(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None, utterance=False):
+
+def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None, turn=False):
+    """
+    A flexible function to preprocess CSV files.
+
+    Parameters:
+    - raw_folder (str): Path to the directory containing raw CSV files.
+    - destination_folder (str): Path to the directory where processed files will be saved.
+    - fillers_words (list, optional): List of filler words to remove from the `Content` column.
+    - roles (bool, optional): Assigns roles (e.g., Participant, Interviewer) to speakers if True.
+    - text_format (bool, optional): Converts CSV content into a dialogue-style text file.
+    - time_stamps (bool, optional): Includes timestamps in dialogue output if True and `text_format=True`.
+    - conditions (pd.DataFrame, optional): DataFrame containing condition information for each file.
+    - turn (bool, optional): Adds a `turn_index` column to track speaker turns.
+    """
     for subdir, _, files in os.walk(raw_folder):
         for file in files:
             if file.endswith(".csv"):
@@ -98,27 +112,37 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                 raw_file_path = os.path.join(subdir, file)
                 destination_file_path = os.path.join(destination_subdir, file)
                 
-                # Load the CSV file, process it, and save the result
+                # Load the CSV file
                 data = pd.read_csv(raw_file_path)
+
+                # Remove filler words if specified and apply basic cleaning
                 if fillers_words:
                     data = data.dropna(subset=['Content'])
                     data['Content'] = data['Content'].apply(simpler_clean, args=(fillers_words,))
                     data = data.dropna(subset=['Content'])
+
+                # Assign roles if specified    
                 if roles:
                     df_role, _ = assign_roles(data, file_name=file)
                     data["Speaker"] = df_role["Role"]
+
+                # Reformat text into dialogue format if specified
                 if text_format:
-                    # if df have 'Original Content' column, use it to create a dialogue with both original and processed content
+                    # If df have 'Original Content' column, use it to create a dialogue with both 'original' and 'translated content'
                     if 'Original Content' in data.columns:
                         convert_csv_to_dialogue_with_original(raw_file_path, destination_file_path, include_timestamps=time_stamps)
                     else:
                         convert_csv_to_dialogue_merge_speakers(raw_file_path, destination_file_path, include_timestamps=time_stamps)
                     continue
+
+                # Add condition information if provided
                 if conditions is not None:
                     data["Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Condition"].values[0]
                     data["Order Condition"] = conditions[conditions["File Name"] == os.path.splitext(file)[0]]["Order Condition"].values[0]
-                if utterance:
-                    add_utterance_index_from_csv(raw_file_path, destination_file_path)
+                
+                # Add turn index if specified
+                if turn:
+                    add_turn_index(data, speaker_column="Speaker")
                     continue
                 
                 data.to_csv(destination_file_path, index=False)
@@ -259,49 +283,20 @@ def assign_roles(data, file_name= None):
     
     return df, scores_df
 
-def add_utterance_index_from_csv(
-    input_csv: str,
-    output_csv: str,
-    speaker_column: str = 'Speaker',
-    file_column: str = 'File Name'
+def add_turn_index(
+    df: pd.DataFrame,
+    speaker_column: str = 'Speaker'
 ):
     """
-    Adds an `utterance_index` column to the input CSV file, tracking when an utterance changes.
+    Adds a `turn_index` column to the dataframe, tracking when a turn changes.
     
-    Parameters:
-    - input_csv (str): Path to the input CSV file.
-    - output_csv (str): Path to save the output CSV with the new column.
-    - speaker_column (str): Column indicating the speaker.
-    - file_column (str): Column identifying the file (unique identifier for conversations).
-    
-    Returns:
-    - None: Writes the modified CSV to `output_csv`.
+    A "turn" refers to the contribution of a single speaker in a conversation. 
+    Turn-taking occurs in a conversation when one person listens while the other person speaks. 
+    As the conversation progresses, the roles of listener and speaker are exchanged back and forth.
+    The `turn_index` increments when a different speaker begins speaking
     """
-    with open(input_csv, mode='r', encoding='utf-8') as infile, \
-         open(output_csv, mode='w', newline='', encoding='utf-8') as outfile:
-        
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames + ['utterance_index']
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-        previous_speaker = None
-        previous_file = None
-        utterance_index = -1
-
-        for row in reader:
-            current_speaker = row.get(speaker_column, '').strip()
-            current_file = row.get(file_column, '').strip()
-
-            # If the speaker or file changes, increment the utterance index
-            if current_file != previous_file or current_speaker != previous_speaker:
-                utterance_index += 1
-                previous_file = current_file
-                previous_speaker = current_speaker
-
-            # Add the utterance index to the row
-            row['utterance_index'] = utterance_index
-            writer.writerow(row)
+    # Generate the `turn_index` column
+    df['turn_index'] = (df[speaker_column] != df[speaker_column].shift()).cumsum() - 1
 
 
 def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timestamps=False):

@@ -4,20 +4,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
-import string
 from collections import Counter
 from typing import Optional, List, Set
 
-from nltk.corpus import stopwords, wordnet
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-from nltk.tag import pos_tag
+import spacy
+# Load spaCy model
+#!python -m spacy download en_core_web_sm
+nlp = spacy.load("en_core_web_sm")
 
-# import nltk
-# nltk.download('stopwords')
-# nltk.download('punkt')  # For word tokenization
-# nltk.download('wordnet')  # For lemmatization
-# nltk.download('averaged_perceptron_tagger')  # For POS tagging
 
 def load_and_combine_csv(directory_path, pattern='*.csv'):
     """
@@ -209,164 +203,122 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
 
 ### Text Analysis Functions
 
-CONTRACTION_MAP = {
-    "n't": "n't",
-    "'ve": "'ve",
-    "'re": "'re",
-    "'ll": "'ll",
-    "'m": "'m",
-    "'d": "'d",
-    "'s": "'s"
-}
-
-def rejoin_contractions(tokens):
-    """
-    After tokenization by word_tokenize, rejoin split contractions.
-    For example, ['do', "n't"] -> ["don't"]
-    """
-    merged_tokens = []
-    skip_next = False
-
-    for i, token in enumerate(tokens):
-        if skip_next:
-            # We skip this token because it was merged with the previous one
-            skip_next = False
-            continue
-
-        if i < len(tokens) - 1:
-            next_token = tokens[i + 1]
-            # If the next token is a known contraction piece, merge them
-            if next_token in CONTRACTION_MAP:
-                merged_tokens.append(token + CONTRACTION_MAP[next_token])
-                skip_next = True  # Skip the next token since we've merged it
-            else:
-                merged_tokens.append(token)
-        else:
-            # For the last token, just append it
-            merged_tokens.append(token)
-
-    return merged_tokens
-
-# Function to map NLTK POS tags to WordNet POS tags
-def get_wordnet_pos(tag):
-    """Map POS tag to the format WordNetLemmatizer accepts."""
-    if tag.startswith('J'):
-        return wordnet.ADJ
-    elif tag.startswith('V'):
-        return wordnet.VERB
-    elif tag.startswith('N'):
-        return wordnet.NOUN
-    elif tag.startswith('R'):
-        return wordnet.ADV
-    else:
-        return wordnet.NOUN  # Default to noun
-
-# To fix particular lemmatization behavior in NLTK
-# https://stackoverflow.com/questions/33594721/why-nltk-lemmatization-has-wrong-output-even-if-verb-exc-has-added-right-value 
-class CustomWordNetLemmatizer(WordNetLemmatizer):
-    def lemmatize(self, word, pos='n'):
-        """Override the default lemmatize method to prefer specific lemmas."""
-        lemmas = self._morphy(word, pos)
-        # If multiple lemmas exist, prefer 'see' over 'saw' for verbs
-        if pos == wordnet.VERB and word.lower() == "saw":
-            return "see"
-        # Otherwise, return the shortest lemma
-        return min(lemmas, key=len) if lemmas else word
-
 def preprocess_text(
     text: str,
-    lemmatize: bool = True,
     remove_stopwords: bool = True,
-    ngrams: int = 1,
     extra_stopwords: Optional[Set[str]] = None
 ) -> str:
-    """ Preprocess the input text while preserving internal apostrophes (e.g., "I've"),
-    removing stopwords, optionally lemmatizing, and optionally creating n-grams."""
-
+    """
+    Preprocess text using spaCy, including tokenization, lemmatization,
+    stopword removal, and lowercasing.
+    """
     if not text:
         return ""
 
-    # 1. Tokenize
-    tokens = word_tokenize(text)
+    # Process text with spaCy
+    doc = nlp(text)
 
-    # 2. Rejoin contractions, if needed
-    #tokens = rejoin_contractions(tokens)
+    tokens = []
+    for token in doc:
+        # Lemmatize and lowercase
+        lemma = token.lemma_.lower()
 
-    # 3. POS Tagging (on original-case tokens)
-    pos_tags = pos_tag(tokens)
+        # Filter tokens (stopwords, punctuation, etc.)
+        if remove_stopwords and (token.is_stop or token.is_punct or token.is_space):
+            continue
 
-    # 4. Lemmatize using POS tags
-    if lemmatize:
-        lemmatizer = CustomWordNetLemmatizer()
-        tokens = [
-            lemmatizer.lemmatize(token, get_wordnet_pos(tag))
-            for token, tag in pos_tags
-        ]
+        # Remove tokens whose lemma is in the extra stop words
+        if extra_stopwords and lemma in extra_stopwords:
+            continue
 
-    # 5. Convert to lowercase (optional, but usually standard)
-    tokens = [t.lower() for t in tokens]
-
-    # 6. Remove punctuation-only tokens
-    tokens = [t.strip(string.punctuation) for t in tokens if t.strip(string.punctuation)]
-
-    # 7. Remove numeric tokens
-    tokens = [t for t in tokens if not any(ch.isdigit() for ch in t)]
-
-    # 8. Remove stopwords
-    if remove_stopwords:
-        stop_words = set(stopwords.words("english"))
-        if extra_stopwords:
-            stop_words = stop_words.union({w.lower() for w in extra_stopwords})
-        tokens = [t for t in tokens if t not in stop_words]
-
-    # 9. Generate n-grams if requested
-    if ngrams > 1:
-        tokens = [
-            "_".join(tokens[i : i + ngrams])
-            for i in range(len(tokens) - ngrams + 1)
-        ]
+        tokens.append(lemma)
 
     return " ".join(tokens)
 
-def word_frequency_analysis(
+
+def count_word_frequencies(
     df: pd.DataFrame,
     tokenized_column: str = 'preprocessed_content',
-    groupby_column: Optional[str] = None,
-    top_n: int = 20
-):
+    groupby_columns: Optional[List[str]] = None,
+    normalize: bool = False
+) -> pd.DataFrame:
     """
-    Plot word frequency analysis with subplots for each group in a specified column.
+    Count word frequencies for the specified groupings.
 
     Parameters:
     - df (pd.DataFrame): The DataFrame containing the data.
     - tokenized_column (str): Column containing pre-tokenized text content (list of words).
-    - groupby_column (str, optional): The column name to group by. If None, no grouping.
-    - top_n (int): Number of top words to display.
+    - groupby_columns (list of str, optional): Columns to group by (e.g., Participant, File).
+    - normalize (bool): Whether to normalize word counts by total word count in each group.
+
+    Returns:
+    - pd.DataFrame: DataFrame with word frequencies and optional normalization.
+    """
+    results = []
+
+    # Group by specified columns
+    grouped = df.groupby(groupby_columns) if groupby_columns else [(None, df)]
+
+    for group_values, group_df in grouped:
+        tokens = []
+        for entry in group_df[tokenized_column].dropna():
+            tokens.extend(entry.split())
+
+        word_counts = Counter(tokens)
+        total_words = sum(word_counts.values())
+
+        # Normalize if requested
+        if normalize and total_words > 0:
+            word_counts = {word: count / total_words for word, count in word_counts.items()}
+
+        # Prepare results
+        group_dict = dict(zip(groupby_columns, group_values)) if groupby_columns else {}
+        for word, freq in word_counts.items():
+            row = {**group_dict, 'Word': word, 'Frequency': freq}
+            results.append(row)
+
+    return pd.DataFrame(results)
+
+def plot_word_frequencies(
+    df: pd.DataFrame,
+    top_n: int = 20,
+    groupby_column: Optional[str] = None,
+    frequency_column: str = 'Frequency',
+    level_column: str = 'Id'
+
+):
+    """
+    Plot word frequencies by group (e.g., Experiment, Condition).
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame containing word frequencies.
+    - top_n (int): Number of top words to display per group.
+    - groupby_column (str, optional): Column to group plots by (e.g., Experiment).
+    - frequency_column (str): Column containing frequency values.
+    - level_column (str): Column defining the granularity level for averaging (e.g., File Name or ID).
 
     Returns:
     - None
     """
     grouped = df.groupby(groupby_column) if groupby_column else [(None, df)]
+
     num_groups = len(grouped) if groupby_column else 1
     fig, axes = plt.subplots(num_groups, 1, figsize=(10, 5 * num_groups), squeeze=False)
     axes = axes.flatten()
 
     for idx, (group_name, group_df) in enumerate(grouped):
-        # Convert to tokens if column contains strings
-        tokens = []
-        for entry in group_df[tokenized_column].dropna():
-            if isinstance(entry, str):
-                tokens.extend(entry.split())  # Split string into words
-            else:
-                tokens.extend(entry)  # Assume it's already a list of tokens
+        # For each word sum their frequency and divide by column of interest
+        n_level = group_df[level_column].nunique()
+        group_df = group_df.groupby('Word').agg({frequency_column: 'sum'}).reset_index()
+        group_df[frequency_column] = group_df[frequency_column] / n_level
 
-        # Get top N words
-        top_n_words = Counter(tokens).most_common(top_n)
-        top_n_df = pd.DataFrame(top_n_words, columns=['Word', 'Frequency'])
-        sns.barplot(
-            data=top_n_df, x='Frequency', y='Word',hue='Word' ,dodge=False, ax=axes[idx], palette='viridis', legend=False
-        )
-        title = f'Top {top_n} Words in {groupby_column}: {group_name}' if groupby_column else 'Top Words'
+
+        # Get top N words for the group
+        top_words = group_df.nlargest(top_n, frequency_column)
+
+        sns.barplot(data=top_words, x=frequency_column, y='Word', ax=axes[idx])
+
+        title = f'Top {top_n} Words in {groupby_column}: {group_name} (n={n_level})' if groupby_column else 'Top Words'
         axes[idx].set_title(title)
         axes[idx].set_xlabel('Frequency')
         axes[idx].set_ylabel('Word')
@@ -374,7 +326,6 @@ def word_frequency_analysis(
     plt.tight_layout()
     plt.show()
 
-    
 def count_unique_words(
     df: pd.DataFrame,
     groupby_columns: List[str],
@@ -401,10 +352,7 @@ def count_unique_words(
             unique_words = set()
 
             for tokens in participant_data[tokenized_column].dropna():
-                # Handle string vs list
-                if isinstance(tokens, str):
-                    tokens = tokens.split()  # Split string into words
-                unique_words.update(tokens)
+                unique_words.update(tokens.split())
             word_participant_count.update(unique_words)
 
         group_dict = dict(zip(groupby_columns, group_values)) if isinstance(group_values, tuple) else {groupby_columns[0]: group_values}

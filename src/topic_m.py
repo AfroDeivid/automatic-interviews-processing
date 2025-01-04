@@ -15,7 +15,7 @@ def load_data(file_path):
     return pd.read_csv(file_path)
 
 # Load data
-df = load_data("OBE1_topics_minsize13.csv")
+df = load_data("df_topic.csv")
 
 # Fixed topic column
 selected_topic_column = "one_topic_name"

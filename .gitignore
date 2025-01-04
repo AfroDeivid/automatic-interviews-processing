@@ -4,6 +4,7 @@
 /results
 /evaluation
 /interviews_corrected
+*/deprecated
 
 # Files types
 *.txt

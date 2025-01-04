@@ -50,7 +50,7 @@ The pipeline supports nested folder structures, making it easy to process multip
 ## Transcription & Diarization (Audio-to-Text)
 [`run_diarize.py`](run_diarize.py)
 
-``conda activate wd1``
+``conda activate wd``
 
 - **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash
