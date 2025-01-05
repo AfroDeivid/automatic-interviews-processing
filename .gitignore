@@ -5,6 +5,7 @@
 /evaluation
 /interviews_corrected
 /deprecated
+*/outputs/*
 
 # Files types
 *.txt
@@ -15,7 +16,6 @@
 *.m4a
 *.mp4
 *.wav
-*.png
 *.xlsx
 *.DS_Store
 

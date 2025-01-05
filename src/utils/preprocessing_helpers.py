@@ -142,8 +142,7 @@ def process_files(raw_folder, destination_folder, fillers_words= None, roles=Fal
                 
                 # Add turn index if specified
                 if turn:
-                    add_turn_index(data, speaker_column="Speaker")
-                    continue
+                    data = add_turn_index(data, speaker_column="Speaker")
                 
                 data.to_csv(destination_file_path, index=False)
 
@@ -297,6 +296,8 @@ def add_turn_index(
     """
     # Generate the `turn_index` column
     df['turn_index'] = (df[speaker_column] != df[speaker_column].shift()).cumsum() - 1
+
+    return df
 
 
 def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timestamps=False):

@@ -368,7 +368,9 @@ def generate_word_clouds(
     groupby_columns: Optional[List[str]] = None,
     filter_values: Optional[List[List[str]]] = None,
     max_words: int = 15,
-    min_count: int = 2
+    min_count: int = 2,
+    save_fig: bool = False
+
 ):
     """
     Generates word clouds based on participant counts for each unique combination
@@ -393,8 +395,9 @@ def generate_word_clouds(
 
     for group_values, group in groups:
         word_counts = dict(zip(group['Word'], group['Participant_Count']))
+
         wordcloud = WordCloud(
-            width=800, height=400,
+            width=1600, height=400,
             background_color='white',
             colormap='viridis',
             max_words=max_words,
@@ -402,9 +405,15 @@ def generate_word_clouds(
             contour_color='black'
         ).generate_from_frequencies(word_counts)
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 4))
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
         title = ", ".join(f"{col}: {val}" for col, val in zip(groupby_columns, group_values)) if groupby_columns else "Word Cloud"
         plt.title(title)
+        plt.tight_layout()
+
+        if save_fig:
+            # Sanitize filename
+            sanitized_title = title.replace(":", "_").replace(",", "_").replace(" ", "_")
+            plt.savefig(f'./outputs/wordcloud_{sanitized_title}.png', dpi=800,bbox_inches="tight")
         plt.show()
