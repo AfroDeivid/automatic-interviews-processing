@@ -138,7 +138,7 @@ with tab3:
         topic_docs = pd.concat([topic_docs, new_extra_rows])
 
     # Select relevant columns to display
-    columns_to_display = ["Experiment", "Id", "Condition", "Speaker", "Content", "Tag"]
+    columns_to_display = ["Experiment", "Id", "Condition", "Speaker", "Content","preprocessed_content","Tag"]
     filtered_topic_docs = topic_docs[columns_to_display]
 
     # Interactive Ag-Grid Table
@@ -150,18 +150,12 @@ with tab3:
     gb.configure_column("Tag", editable=False)  # Tags are added dynamically via input
     grid_options = gb.build()
 
-    # Enable autosizing for all columns
-    grid_options["defaultColDef"] = {
-        "flex": 1,  # Allow columns to take up available space proportionally
-        "autoSizeColumns": True  # Automatically adjust the size of columns to fit their content
-    }
-
     response = AgGrid(
         filtered_topic_docs,
         gridOptions=grid_options,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         update_mode=GridUpdateMode.MODEL_CHANGED,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,
         enable_enterprise_modules=True,
         height=500,
         width="100%",

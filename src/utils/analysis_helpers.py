@@ -206,31 +206,50 @@ def stripplot_with_counts(df, x_column, y_column, hue_column=None, id_column=Non
 def preprocess_text(
     text: str,
     remove_stopwords: bool = True,
-    extra_stopwords: Optional[Set[str]] = None
+    extra_stopwords: Optional[Set[str]] = None,
+    retain_stopwords: Optional[Set[str]] = None
 ) -> str:
     """
     Preprocess text using spaCy, including tokenization, lemmatization,
     stopword removal, and lowercasing.
+
+    Args:
+        text (str): The input text to preprocess.
+        remove_stopwords (bool): Whether to remove stopwords, punctuation, and whitespace. Default is True.
+        extra_stopwords (Optional[Set[str]]): Additional custom stopwords to remove. Default is None.
+        retain_stopwords (Optional[Set[str]]): Specific stopwords to retain even if they are stopwords. Default is None.
+
+    Returns:
+        str: The preprocessed text as a single string.
     """
     if not text:
         return ""
 
-    # Process text with spaCy
+    # Process the text using spaCy
     doc = nlp(text)
 
+    # Initialize an empty list to hold processed tokens
     tokens = []
     for token in doc:
         # Lemmatize and lowercase
         lemma = token.lemma_.lower()
 
-        # Filter tokens (stopwords, punctuation, etc.)
-        if remove_stopwords and (token.is_stop or token.is_punct or token.is_space):
+        # Apply stopword filter
+        if remove_stopwords and token.is_stop:
+            # Retain specific stopwords if listed
+            if retain_stopwords and lemma in retain_stopwords:
+                tokens.append(lemma)
             continue
 
-        # Remove tokens whose lemma is in the extra stop words
+        # Remove tokens in extra stopwords
         if extra_stopwords and lemma in extra_stopwords:
             continue
 
+        # Filter punctuation and spaces
+        if token.is_punct or token.is_space:
+            continue
+
+        # Add valid tokens to the list
         tokens.append(lemma)
 
     return " ".join(tokens)
