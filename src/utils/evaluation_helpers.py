@@ -1,8 +1,11 @@
+import pandas as pd
+import numpy as np
 import difflib
 import html
 import os
-import pandas as pd
 import csv
+import re
+
 from nltk.tokenize import word_tokenize
 
 # WER metrics performance
@@ -140,15 +143,21 @@ def format_diff_WER(ref_text, hyp_text, max_insert_length=None, tolerance_replac
 
     return diff_html.strip(), total_D, total_I, total_S
 
-
-def calculate_wer_and_generate_html(prediction_file, reference_file, output_file, max_insert_length=None, tolerance_replace=2):
+def calculate_wer_and_generate_html(prediction_file, reference_file, output_file, max_insert_length=None, tolerance_replace=2, format="csv"):
     """
     Flatten prediction and reference CSVs, calculate WER, and generate an HTML output highlighting the changes needed
     to match the prediction to the reference. Optionally excludes long consecutive insertions and handles substitutions with tolerance.
     """
+    if format == "csv":
     # Step 1: Flatten both prediction and reference CSVs into plain text
-    reference_text = flatten_csv_content(reference_file)
-    prediction_text = flatten_csv_content(prediction_file)
+        reference_text = flatten_csv_content(reference_file)
+        prediction_text = flatten_csv_content(prediction_file)
+    elif format == "text_WER":
+        reference_text = extract_text_WER(reference_file)
+        prediction_text = extract_text_WER(prediction_file)
+    elif format == "text_DER":
+        reference_text = extract_text_DER(reference_file)
+        prediction_text = extract_text_DER(prediction_file)
 
     # Step 2: Compare the plain texts and highlight what changes are needed
     highlighted_diff, total_D, total_I, total_S = format_diff_WER(reference_text, prediction_text, max_insert_length, tolerance_replace)
@@ -200,7 +209,7 @@ def calculate_wer_and_generate_html(prediction_file, reference_file, output_file
 
     return metrics
 
-def process_folder(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual_comparison',info =None):
+def process_folder_csv(prediction_folder, reference_folder, max_insert_length=None, tolerance_replace=2, dir_visual = 'visual_comparison',info=None):
     """
     Process all CSV files in the prediction folder, compare with matching files in the reference folder,
     calculate WER and Diarization metrics, generate HTML visual files, and save metrics to a CSV file.
@@ -243,7 +252,7 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
                 )
 
                 if info is not None:
-                    ref_duration = info[info["File_name"] == base_name]["Duration_sec"].values[0]
+                    ref_duration = info[info["File Name"] == base_name]["Duration_sec"].values[0]
                 else:
                     ref_duration = None
                     
@@ -257,7 +266,7 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
 
                 # Combine WER and Diarization metrics
                 combined_metrics = {
-                    'Filename': os.path.splitext(filename)[0],
+                    'Filename': base_name,
                     'WER': wer_metrics.get('WER'),
                     'DER': dia_metrics.get('DER'),
                     'Total Words': wer_metrics.get('Total Words'),
@@ -284,7 +293,6 @@ def process_folder(prediction_folder, reference_folder, max_insert_length=None, 
         return metrics_df
     else:
         print("No metrics to save.")
-
 
 # Diarisation metrics performance
 
@@ -432,7 +440,6 @@ def has_nearby_speaker(df, start_time, end_time, tolerance):
     mask = (df['Start'] < end_time + tolerance) & (df['End'] > start_time - tolerance)
     return df.loc[mask, 'Speaker'].unique()
 
-
 # For Visualization
 
 def align_rows_by_time(df_ref, df_pred):
@@ -524,7 +531,6 @@ def format_diff(ref_text, hyp_text):
             diff_html += ' <span style="background-color: lightcoral;">[<s>{}</s>]</span>'.format(
                 ' '.join(hyp_words[i1:i2]))
     return diff_html.strip()
-
 
 def format_cell_diff(ref_value, pred_value):
     """
@@ -713,5 +719,122 @@ def diarisation_html(reference_file, prediction_file, output_file, info_ref=None
 
     print(f"Combined HTML file saved as {output_file}")
     
-
     return error_durations
+
+### Text File
+from utils.text_html import process_html_text
+
+def process_folder_text(
+    prediction_folder,
+    reference_folder,
+    max_insert_length=None,
+    tolerance_replace=2,
+    dir_visual='visual_comparison'
+):
+    """
+    Processes all text files in the reference folder, compares them to text files
+    with the same names in the prediction folder, calculates WER, generates HTML, 
+    and collects metrics in a DataFrame.
+
+    Parameters:
+        prediction_folder (str): Path to folder containing prediction .txt files.
+        reference_folder (str): Path to folder containing reference .txt files.
+        max_insert_length (int, optional): If insertions exceed this length, exclude them from WER.
+        tolerance_replace (int, optional): Tolerance for splitting large substitutions.
+        dir_visual (str, optional): Subdirectory name for HTML outputs.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing WER metrics for all processed text files.
+    """
+    metrics_list = []
+
+    # Create output folder if not exists
+    visual_comparison_folder = os.path.join(prediction_folder, dir_visual)
+    os.makedirs(visual_comparison_folder, exist_ok=True)
+
+    # Iterate through all text files in the reference folder
+    for filename in os.listdir(reference_folder):
+        if filename.endswith('.txt'):  # or any text extension you want
+            reference_path = os.path.join(reference_folder, filename)
+            prediction_path = os.path.join(prediction_folder, filename)
+
+            # Check if matching prediction file exists
+            if os.path.exists(prediction_path):
+                print(f"Processing text file: {filename}")
+                base_name, _ = os.path.splitext(filename)
+
+                # Define output HTML path
+                wer_output_file = os.path.join(
+                    visual_comparison_folder,
+                    f"{base_name}_WER.html"
+                )
+
+                # Calculate WER and generate HTML
+                wer_metrics = calculate_wer_and_generate_html(
+                    prediction_file=prediction_path,
+                    reference_file=reference_path,
+                    output_file=wer_output_file,
+                    max_insert_length=max_insert_length,
+                    tolerance_replace=tolerance_replace,
+                    format="text_WER"
+                )
+
+                # Define output HTML path
+                der_output_file = os.path.join(
+                    visual_comparison_folder,
+                    f"{base_name}_DER_support.html"
+                )
+
+                # Calculate simplified DER
+                _ = calculate_wer_and_generate_html(
+                    prediction_file=prediction_path,
+                    reference_file=reference_path,
+                    output_file=der_output_file,
+                    max_insert_length=max_insert_length,
+                    tolerance_replace=tolerance_replace,
+                    format="text_DER"
+                )
+                total_words = wer_metrics.get('Total Words')
+                DER, misassigned_words = process_html_text(der_output_file, total_words)
+
+                # Combine the WER and Diarization metrics
+                combined_metrics = {
+                    'Filename': base_name,
+                    'WER': wer_metrics.get('WER'),
+                    'DER': DER,
+                    'Total Words': total_words,
+                    'Deletions': wer_metrics.get('Deletions'),
+                    'Insertions': wer_metrics.get('Insertions'),
+                    'Substitutions': wer_metrics.get('Substitutions'),
+                    'Words Confusions': misassigned_words
+                }
+
+                metrics_list.append(combined_metrics)
+                print(f"Processed file: {filename}")
+            else:
+                print(f"No matching prediction text file for {filename}")
+
+    # Save metrics to a CSV file
+    metrics_df = pd.DataFrame(metrics_list)
+    return metrics_df
+
+
+def extract_text_WER(file_name):
+    """
+    Read and remove timestamps and speaker labels from a transcript (file text).
+    """
+    with open(file_name, "r", encoding="utf-8") as file:
+        # Read the contents of the file
+        raw_text = file.read()
+
+    return re.sub(r"\[.*?\]:|\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}", "", raw_text).replace("\n", " ").strip()
+
+def extract_text_DER(file_name):
+    """
+    Read and remove timestamps from a transcript (file text).
+    """
+    with open(file_name, "r", encoding="utf-8") as file:
+        # Read the contents of the file
+        raw_text = file.read()
+
+    return re.sub(r"\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}", "", raw_text).replace("\n", " ").strip()

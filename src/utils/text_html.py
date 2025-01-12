@@ -73,22 +73,22 @@ def count_misassigned_words(transcript_div):
             if chunk_type == 'text':
                 # Count words until the conflict is resolved
                 count, label = count_words_until_first_speaker(content)
-                print(f"    Index:{idx} Added words:{count} Unmodified label:{label}")
+                #print(f"    Index:{idx} Added words:{count} Unmodified label:{label}")
                 misassigned_count += count
                 if label:
                     last_correct_speaker_label = get_last_speaker(content)
                     conflict_speaker_label = None
-                    print(f"Index:{idx} Conflict solved found Unmodified 'speaker_label'\n")
+                    #print(f"Index:{idx} Conflict solved found Unmodified 'speaker_label'\n")
                 continue
             if chunk_type == 'span' and speaker_label:
                 speaker = get_speaker_from_span(content)
-                print(f"Index:{idx} Speaker:{speaker} | conflict_speaker_label:{conflict_speaker_label} | last_correct_speaker_label:{last_correct_speaker_label}")
+                #print(f"Index:{idx} Speaker:{speaker} | conflict_speaker_label:{conflict_speaker_label} | last_correct_speaker_label:{last_correct_speaker_label}")
                 if speaker == conflict_speaker_label:
-                    print(f"Index:{idx} Conflict solved same speaker \n")
+                    #print(f"Index:{idx} Conflict solved same speaker \n")
                     conflict_speaker_label = None
                     continue
                 elif speaker == last_correct_speaker_label:
-                    print(f"Index:{idx} Conflict solved it was an comment inside a bigger segment of 'correct_speaker_label'\n")
+                    #print(f"Index:{idx} Conflict solved it was an comment inside a bigger segment of 'correct_speaker_label'\n")
                     conflict_speaker_label = None
                     continue
                 else:
@@ -104,9 +104,9 @@ def count_misassigned_words(transcript_div):
                     #print(f"Index:{idx} Last correct speaker label:{last_correct_speaker_label}")
                 # Conflict due probably to a subtitution of the speaker label
                 if extra_info == 'text_ends_with_bracket':
-                    print(f"Index:{idx} Conflict detected: 'text_ends_with_bracket")
+                    #print(f"Index:{idx} Conflict detected: 'text_ends_with_bracket")
                     speaker_pred , speaker_ref = extract_substitution_contents(chunked_result[idx+1][0])
-                    print(f"    Speaker pred: {speaker_pred} | Speaker ref: {speaker_ref}")
+                    #print(f"    Speaker pred: {speaker_pred} | Speaker ref: {speaker_ref}")
                     conflict_speaker_label = speaker_pred
                     last_correct_speaker_label = speaker_ref
                     continue_again = True
@@ -118,28 +118,33 @@ def count_misassigned_words(transcript_div):
                 #print(f"Index:{idx} last_correct_speaker_label:{last_correct_speaker_label}")
                 if extra_info in ("ins", "del"):
                     conflict_speaker_label = get_speaker_from_span(content)
-                    print(f"Index:{idx} Conflict Ins/Del 'speaker_label': {conflict_speaker_label}")
+                    #print(f"Index:{idx} Conflict Ins/Del 'speaker_label': {conflict_speaker_label}")
                 if extra_info == 'sub':
-                    print(f"Index:{idx} Conflict Sustitution 'speaker_label': {conflict_speaker_label}")
-                    pred , _ = extract_substitution_contents(content)
-                    count, label = count_words_until_first_speaker(pred)
-                    print(f"    Index:{idx} Added words:{count} Unmodified label:{label}")
+                    #print(f"Index:{idx} Conflict Sustitution 'speaker_label': {conflict_speaker_label}")
+                    _ , ref = extract_substitution_contents(content)
+                    # Reverse the order of the elements of the string to handle the substitution while persevering speaker labels
+                    ref = " ".join(re.findall(r'\[.*?\]|[^\s]+', ref)[::-1])
+                    #print(ref)
+                    count, label = count_words_until_first_speaker(ref)
+                    #print(f"    Index:{idx} Added words:{count} Unmodified label:{label}")
                     misassigned_count += count
                     if label:
                         last_correct_speaker_label = get_last_speaker(content)
                         conflict_speaker_label = None
-                        print(f"Index:{idx} Conflict solved just move some words with Sustitution'\n")
+                        #print(f"Index:{idx} Conflict solved just move some words with Sustitution'\n")
 
     print(f"Misassigned words: {misassigned_count}")
     return misassigned_count, chunked_result
 
-def process_html(html_file, total_words_reference):
+def process_html_text(html_file, total_words_reference, return_chunked_result=False):
     """
     Process the HTML file to calculate the DER (Diarization Error Rate).
     
     :param html_file: Path to the HTML file containing the diarization transcript.
     :param total_words_reference: Reference count of total words (int).
     :return: DER (float) - Diarization Error Rate.
+    :return: misassigned_count (int) - Count of misassigned words.
+    :return: chunked_result (list) - List of tuples with the chunked content if return_chunked_result is True.
     """
     # Validate inputs
     if total_words_reference <= 0:
@@ -164,10 +169,12 @@ def process_html(html_file, total_words_reference):
     # Calculate DER
     DER = misassigned_count / total_words_reference
 
-    #print(f"Misassigned words: {misassigned_count}")
     print(f"Total words reference: {total_words_reference}")
 
-    return DER, chunked_result
+    if return_chunked_result:
+        return DER, misassigned_count, chunked_result
+    else:
+        return DER, misassigned_count
 
 ## Helper functions
 
