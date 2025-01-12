@@ -44,9 +44,9 @@ def chunk_div_content(transcript_div):
     # After the loop, if there's leftover text in the buffer, add it
     leftover_text = "".join(text_buffer).strip()
     if leftover_text:
-        extra_info = "text_ends_with_bracket" if buffered_text.endswith(' [') else "no_label"
-        speaker_label = True if has_speaker_label(buffered_text) else "no_label"
-        chunks.append((buffered_text, 'text', speaker_label, extra_info))
+        extra_info = "text_ends_with_bracket" if leftover_text.endswith(' [') else "no_label"
+        speaker_label = True if has_speaker_label(leftover_text) else "no_label"
+        chunks.append((leftover_text, 'text', speaker_label, extra_info))
         
     return chunks
 
