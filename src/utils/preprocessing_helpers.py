@@ -491,7 +491,7 @@ def merge_csv_in_subdirectories(source_dir, output_dir):
 def preprocessing_csv(str_file):
     """Create a processed version of the CSV directly from the .str file path."""
     # List of common filler words to remove
-    fillers_words = ["uh", "huh", "um", "hmm", "Mm"]
+    fillers_words = ["Mm-hmm", "uh", "huh", "um", "hmm", "Mm"]
     
     # Change the extension from .str to .csv
     csv_path = str_file.replace('.str', '.csv')
@@ -517,6 +517,9 @@ def preprocessing_csv(str_file):
     preproced_csv_path = os.path.join(preproced_dir, os.path.basename(csv_path))
     df.to_csv(preproced_csv_path, index=False)
     print(f"Saved preprocessed file to {preproced_csv_path}")
+    # Save it also in text version
+    convert_csv_to_dialogue_merge_speakers(preproced_csv_path,preproced_csv_path)
+
 
 def match_transcripts(reference_df, target_df):
     """

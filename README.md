@@ -21,16 +21,10 @@ Ensure that FFMPEG is added to your system’s PATH.
 
 After ensuring the prerequisites are set up, proceed with creating the folowing environement :
 
-**try if works for cuda version...**
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124**
 ```
 conda create --name wd python=3.10 --yes
 conda activate wd
-pip install cython
 pip install -c constraints.txt -r requirements.txt
-pip install ipykernel
-pip install pandas
-pip install pydub
 ``` 
 
 # Usage
@@ -45,7 +39,6 @@ The pipeline supports nested folder structures, making it easy to process multip
 ## Transcription & Diarization (Audio-to-Text)
 [`run_diarize.py`](run_diarize.py)
 
-``conda activate wd``
 
 - **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash
@@ -63,8 +56,8 @@ To improve performance, specify the task as ``translate`` if you know in advance
 
 The pipeline will automatically:
 
-- Traverse all subdirectories to locate audio files.
-- Use the main folder name as the experiment name for the Experiment column in the output CSV.
+- Go through all subdirectories to locate audio files.
+- Use the main folder name as the experiment name for the ``Experiment`` column in the output CSV.
 - Output results for each file in text format and structured CSV format.
 
 ## Outputs

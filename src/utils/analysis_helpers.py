@@ -453,6 +453,12 @@ def build_network_from_interviews(df_interviews, include_self_loops=True):
     
     Returns:
     - G (nx.DiGraph): Directed graph with aggregated topic transitions and edge weights and node attributes (topic counts).
+
+    Note:
+    The nodes in the graph built by build_network_from_interviews contain attributes that correspond to 
+    the options available for the size_by parameter in ``plot_topic_transition_network``:
+    - occurrence: Calculated as the total number of times a topic appears in the dataset (total mentions).
+    - appearance: Represents the number of unique interviews in which a topic appears.
     """
     # Initialize directed graph
     G = nx.DiGraph()
@@ -497,7 +503,7 @@ def plot_topic_transition_network(
     G,
     title="Topic Transition Network",
     show_edge_labels=True,
-    save_path=None,
+    file_name=None,
     background_color="white",
     size_by="occurrence",  # Options: 'occurrence', 'appearance', or 'degree_centrality'
     min_size=1000,          # Minimum node size
@@ -511,12 +517,23 @@ def plot_topic_transition_network(
         G (Graph): The directed graph to plot (topics as nodes, transitions as edges).
         title (str): The title of the plot.
         show_edge_labels (bool): Whether to show edge weight labels.
-        save_path (str, optional): Path to save the plot as an image file. If None, the plot is not saved.
+        file_name (str, optional): Path to save the plot as an image file. If None, the plot is not saved.
         background_color (str): Background color of the plot ('white' or 'transparent').
         size_by (str): Criterion for node size ('occurrence', 'appearance', or 'degree_centrality').
         min_size (int): Minimum node size after normalization.
         max_size (int): Maximum node size after normalization.
         palette (dict, optional): Predefined color palette (e.g., {0: '#FF5733', 1: '#33FF57'}). If None, a palette will be generated.
+
+    Note:
+    The size_by parameter determines how the sizes of the nodes (topics) in the network are calculated.
+
+    - occurrence: Node size is based on the total number of times a topic was mentioned across all interviews. 
+                    Topics with more occurrences will appear larger in the plot.
+    - appearance: Node size is based on the number of unique interviews where a topic appears at least once. 
+                    Topics mentioned in more interviews will be larger.
+    - degree_centrality: Node size is based on the topic's degree centrality in the graph. Degree centrality measures 
+      how connected a topic is within the network, taking into account both incoming and outgoing connections. 
+                    Topics with higher centrality will appear larger.
 
     """
 
@@ -615,7 +632,7 @@ def plot_topic_transition_network(
     plt.tight_layout()
 
     # Save plot if requested
-    if save_path:
-        plt.savefig(save_path, bbox_inches="tight", dpi=1000, facecolor=facecolor)
+    if file_name:
+        plt.savefig(file_name, bbox_inches="tight", dpi=1000, facecolor=facecolor)
 
     plt.show()
