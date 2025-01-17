@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
 from collections import Counter
-from typing import Optional, List, Set
+from typing import Optional, Union, List, Set
 
 import spacy
 # Load spaCy model
@@ -207,8 +207,9 @@ def preprocess_text(
     text: str,
     remove_stopwords: bool = True,
     extra_stopwords: Optional[Set[str]] = None,
-    retain_stopwords: Optional[Set[str]] = None
-) -> str:
+    retain_stopwords: Optional[Set[str]] = None,
+    return_stopwords: bool = False
+) -> Union[str, List[str]]:
     """
     Preprocess text using spaCy, including tokenization, lemmatization,
     stopword removal, and lowercasing.
@@ -218,31 +219,36 @@ def preprocess_text(
         remove_stopwords (bool): Whether to remove stopwords, punctuation, and whitespace. Default is True.
         extra_stopwords (Optional[Set[str]]): Additional custom stopwords to remove. Default is None.
         retain_stopwords (Optional[Set[str]]): Specific stopwords to retain even if they are stopwords. Default is None.
+        return_stopwords (bool): Whether to return the list of stopwords used in preprocessing. Default is False.
 
     Returns:
-        str: The preprocessed text as a single string.
+        Union[str, List[str]]: The preprocessed text as a single string, or the list of stopwords used if return_stopwords is True.
     """
     if not text:
-        return ""
+        return "" if not return_stopwords else []
 
     # Process the text using spaCy
     doc = nlp(text)
 
+    # Get the default stopwords from spaCy
+    default_stopwords = set(nlp.Defaults.stop_words)
+
+    # Combine default stopwords with extra stopwords
+    all_stopwords = default_stopwords.union(extra_stopwords or set())
+
+    # Remove retained stopwords from the final stopword list
+    if retain_stopwords:
+        all_stopwords.difference_update(retain_stopwords)
+
     # Initialize an empty list to hold processed tokens
     tokens = []
+
     for token in doc:
         # Lemmatize and lowercase
         lemma = token.lemma_.lower()
 
         # Apply stopword filter
-        if remove_stopwords and token.is_stop:
-            # Retain specific stopwords if listed
-            if retain_stopwords and lemma in retain_stopwords:
-                tokens.append(lemma)
-            continue
-
-        # Remove tokens in extra stopwords
-        if extra_stopwords and lemma in extra_stopwords:
+        if remove_stopwords and lemma in all_stopwords:
             continue
 
         # Filter punctuation and spaces
@@ -252,8 +258,10 @@ def preprocess_text(
         # Add valid tokens to the list
         tokens.append(lemma)
 
-    return " ".join(tokens)
+    if return_stopwords:
+        return list(all_stopwords)
 
+    return " ".join(tokens)
 
 def count_word_frequencies(
     df: pd.DataFrame,
@@ -498,7 +506,6 @@ def build_network_from_interviews(df_interviews, include_self_loops=True):
                     G.add_edge(u, v, weight=1)
 
     return G
-
 def plot_topic_transition_network(
     G,
     title="Topic Transition Network",
@@ -508,7 +515,8 @@ def plot_topic_transition_network(
     size_by="occurrence",  # Options: 'occurrence', 'appearance', or 'degree_centrality'
     min_size=1000,          # Minimum node size
     max_size=4000,          # Maximum node size
-    palette = None
+    palette=None,
+    legend_outside=False,  # Option to place legend outside the plot
 ):
     """
     Plot the directed topic transition network with numeric labels, enhanced arrow visibility, and adjusted edge margins.
@@ -523,25 +531,14 @@ def plot_topic_transition_network(
         min_size (int): Minimum node size after normalization.
         max_size (int): Maximum node size after normalization.
         palette (dict, optional): Predefined color palette (e.g., {0: '#FF5733', 1: '#33FF57'}). If None, a palette will be generated.
-
-    Note:
-    The size_by parameter determines how the sizes of the nodes (topics) in the network are calculated.
-
-    - occurrence: Node size is based on the total number of times a topic was mentioned across all interviews. 
-                    Topics with more occurrences will appear larger in the plot.
-    - appearance: Node size is based on the number of unique interviews where a topic appears at least once. 
-                    Topics mentioned in more interviews will be larger.
-    - degree_centrality: Node size is based on the topic's degree centrality in the graph. Degree centrality measures 
-      how connected a topic is within the network, taking into account both incoming and outgoing connections. 
-                    Topics with higher centrality will appear larger.
-
+        legend_outside (bool): Whether to place the legend outside the plot.
     """
 
     # Determine the background color
     facecolor = "none" if background_color == "transparent" else background_color
 
     # Initialize the plot
-    fig = plt.figure(figsize=(15, 10), dpi=400, facecolor=facecolor)
+    fig, ax = plt.subplots(figsize=(15, 10), facecolor=facecolor)
     pos = nx.spring_layout(G, seed=42, k=0.5, scale=3)
 
     # Extract numeric IDs from node names (e.g., "2_see_myself_awake_love" -> "2")
@@ -554,7 +551,6 @@ def plot_topic_transition_network(
         node_colors = [palette[node] for node in G.nodes()]
     else:
         node_colors = [palette[int(numeric_labels[node])] for node in G.nodes()]
-
 
     # Node sizes based on the selected criterion
     if size_by == "occurrence":
@@ -584,11 +580,11 @@ def plot_topic_transition_network(
 
     # Draw nodes
     nx.draw_networkx_nodes(
-        G, pos, node_size=normalized_sizes, node_color=node_colors, edgecolors="white", linewidths=1.5
+        G, pos, node_size=normalized_sizes, node_color=node_colors, edgecolors="white", linewidths=1.5, ax=ax
     )
     
     # Draw numeric node labels
-    nx.draw_networkx_labels(G, pos, labels=numeric_labels, font_size=16, font_color="white")
+    nx.draw_networkx_labels(G, pos, labels=numeric_labels, font_size=16, font_color="white", ax=ax)
 
     # Draw edges with enhanced arrows and adjusted margins
     all_weights = [G[u][v]["weight"] for u, v in G.edges()]
@@ -608,23 +604,31 @@ def plot_topic_transition_network(
             alpha=0.8,  # Slight transparency for polished look
             min_source_margin=math.sqrt(node_sizes_dict[u] / math.pi),  # Adjust for source node size
             min_target_margin=math.sqrt(node_sizes_dict[v] / math.pi),  # Adjust for target node size
+            ax=ax
         )
 
     # Draw edge labels if enabled
     if show_edge_labels:
         edge_labels = {(u, v): f"{data['weight']}" for u, v, data in G.edges(data=True)}
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=12)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=12, ax=ax)
 
     # Add legend with full topic names
     legend_labels = {numeric_labels[node]: node for node in G.nodes()}
     handles = [
         plt.Line2D([0], [0], marker="o", color=palette[int(key)], linestyle="", markersize=10)
-        for key,_ in sorted(legend_labels.items())
-    ] 
+        for key in sorted(legend_labels.keys())
+    ]
     labels = [f"{value}" for _, value in sorted(legend_labels.items())]
-    plt.legend(
-        handles, labels, title="Topics", loc="best", fontsize=14, title_fontsize=16
-    )
+
+    # # Adjust legend position
+    if legend_outside:
+        plt.legend(
+            handles, labels, title="Topics", loc="center left", bbox_to_anchor=(1.05, 0.5), fontsize=14, title_fontsize=16
+        )
+    else:
+        plt.legend(
+            handles, labels, title="Topics", loc="best", fontsize=14, title_fontsize=16
+        )
 
     # Final plot adjustments
     plt.title(title, fontsize=20, color="#3b3b3b")
@@ -633,6 +637,6 @@ def plot_topic_transition_network(
 
     # Save plot if requested
     if file_name:
-        plt.savefig(file_name, bbox_inches="tight", dpi=1000, facecolor=facecolor)
+        plt.savefig(file_name, dpi=600, bbox_inches="tight")
 
     plt.show()
