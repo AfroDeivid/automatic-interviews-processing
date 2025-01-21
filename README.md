@@ -1,6 +1,6 @@
 # Automatic Interviews processing
 
-This repository provides a scalable and automated pipeline for transcribing and diarizing audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages cutting-edge open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in structured formats like text and CSV files.
+This repository provides a scalable and automated pipeline for transcription and diarization of audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in structured formats like text and CSV files.
 
 ![Project Workflow](images/WD_pipeline.png)
 
@@ -37,8 +37,6 @@ The pipeline supports nested folder structures, making it easy to process multip
 - Subdirectories within each main folder can be used to group sessions, participants, or other logical subdivisions.
 
 ## Transcription & Diarization (Audio-to-Text)
-[`run_diarize.py`](run_diarize.py)
-
 
 - **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash

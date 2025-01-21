@@ -1,5 +1,3 @@
-# Guidelines
-
 ## Excel tip
 
 Select an entire row: ``Shift`` + ``Space``
