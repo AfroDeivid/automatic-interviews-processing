@@ -6,6 +6,16 @@ import torch
 from tqdm import tqdm
 import re
 
+def get_files(directory, extensions):
+    """Get a list of files in the specified directory and its subdirectories with given extensions."""
+    files = []
+
+    for root, dirs, files_in_dir in os.walk(directory):
+        for file in files_in_dir:
+            if any(file.endswith(ext) for ext in extensions):
+                files.append(os.path.join(root, file))
+                
+    return files
 
 # Function docx_to_csv
 def extract_dialogue_from_docx(docx_file):
@@ -198,16 +208,23 @@ def translate_by_row_csv_with_chunking(input_csv, source_lang, target_lang, mode
                 text = row["Text"]
 
                 # Split the text into chunks
-                chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
-
-                # Translate each chunk
-                translated_chunks = []
-                for chunk in chunks:
-                    translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
-                    translated_chunks.append(translated_chunk)
-
+                #chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
+                # # Translate each chunk
+                # translated_chunks = []
+                # for chunk in chunks:
+                #     translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
+                #     translated_chunks.append(translated_chunk)
                 # Reassemble the translated chunks
-                translated_text = ' '.join(translated_chunks)
+                #translated_text = ' '.join(translated_chunks)
+
+                sentences = re.split(r'(?<=[.!?])\s+', text)  # Split text into sentences
+                translated_sentences = []
+                for sentence in sentences:
+                    translated_sentence = translation(source_lang, target_lang, sentence, model, processor, use_cuda)
+                    translated_sentences.append(translated_sentence)
+
+                # Reassemble the translated_sentences
+                translated_text = ' '.join(translated_sentences)
 
                 # Write the speaker and translated text to the new CSV file immediately
                 writer.writerow({"Speaker": speaker, "Text": translated_text})
@@ -266,17 +283,24 @@ def translate_folder(input_folder, source_lang, target_lang, model, processor, m
                     speaker = row["Speaker"]
                     text = row["Text"]
 
-                    # Split text into chunks
-                    chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
-
-                    # Translate each chunk
-                    translated_chunks = []
-                    for chunk in chunks:
-                        translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
-                        translated_chunks.append(translated_chunk)
-
+                    # Split the text into chunks
+                    #chunks = split_text_into_chunks(text, max_tokens, processor, source_lang)
+                    # # Translate each chunk
+                    # translated_chunks = []
+                    # for chunk in chunks:
+                    #     translated_chunk = translation(source_lang, target_lang, chunk, model, processor, use_cuda)
+                    #     translated_chunks.append(translated_chunk)
                     # Reassemble the translated chunks
-                    translated_text = ' '.join(translated_chunks)
+                    #translated_text = ' '.join(translated_chunks)
+
+                    sentences = re.split(r'(?<=[.!?])\s+', text)  # Split text into sentences
+                    translated_sentences = []
+                    for sentence in sentences:
+                        translated_sentence = translation(source_lang, target_lang, sentence, model, processor, use_cuda)
+                        translated_sentences.append(translated_sentence)
+
+                    # Reassemble the translated_sentences
+                    translated_text = ' '.join(translated_sentences)
 
                     # Write the translated row
                     writer.writerow({"Speaker": speaker, "Text": translated_text})

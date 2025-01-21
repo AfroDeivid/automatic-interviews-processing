@@ -48,12 +48,4 @@ conda install -c conda-forge ipykernel
 conda install sacrebleu -yes
 conda install pandas nltk -y
 
-pip install --upgrade pip  # ensures that pip is current
-git clone https://github.com/google-research/bleurt.git
-cd bleurt
-pip install .
-
-wget https://storage.googleapis.com/bleurt-oss/20/BLEURT-20.zip
-unzip BLEURT-20.zip -d bleurt_checkpoints
-
 ```

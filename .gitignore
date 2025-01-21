@@ -18,10 +18,14 @@
 *.wav
 *.xlsx
 *.DS_Store
+*.pkl
 
 # Installation files
 !requirements.txt
 !constraints.txt
+
+# Checkpoint files for the tranlation evaluation
+*/BLEURT-20
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
