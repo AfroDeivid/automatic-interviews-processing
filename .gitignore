@@ -6,6 +6,8 @@
 /interviews_corrected
 /deprecated
 */outputs/*
+*/Dataset/*
+
 
 # Files types
 *.txt
