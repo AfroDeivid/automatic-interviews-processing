@@ -6,8 +6,8 @@
 /interviews_corrected
 /deprecated
 */outputs/*
+*/images/*
 /Dataset
-
 
 # Files types
 *.txt
@@ -25,6 +25,9 @@
 # Installation files
 !requirements.txt
 !constraints.txt
+
+# Readme images
+!src/images/readme/WD_pipeline.png
 
 # Checkpoint files for the tranlation evaluation
 */BLEURT-20

@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,8 +9,6 @@ from collections import Counter
 from typing import Optional, Union, List, Set
 
 import spacy
-# Load spaCy model
-#!python -m spacy download en_core_web_sm
 nlp = spacy.load("en_core_web_sm")
 
 
@@ -52,35 +51,22 @@ def load_and_combine_csv(directory_path, pattern='*.csv'):
 
 def standardize_speaker_labels(df):
     """
-    Standardize Speaker labels.
+    Standardize Speaker labels by merging all interviewers into a single 'Interviewer' category
+    and retaining the original speaker labels in a separate column.
     """
-
-    # Standardize Speaker labels (e.g., merge all Interviewers into one category)
-    speaker_replacements = {
-        'Interviewer 1': 'Interviewer',
-        'Interviewer 2': 'Interviewer',
-        'Interviewer 3': 'Interviewer',
-        # Add more replacements if necessary
-    }
+    # Retain the original speaker labels for reference
     df["Speaker_original"] = df["Speaker"]
-    df['Speaker'] = df['Speaker'].replace(speaker_replacements)
-
-    return df
-
-def calculate_word_counts(df):
-    """
-    Calculate word and character counts for each 'Content' entry.
-
-    Parameters:
-    - df (pd.DataFrame): The DataFrame with 'Content' column.
-
-    Returns:
-    - pd.DataFrame: DataFrame with added 'Word_Count' and 'Character_Count' columns.
-    """
-
-    df['Word Count'] = df['Content'].apply(lambda x: len(x.split()))
-    print("Calculated 'Word Count' for each 'Content' entry.")
-
+    
+    # Define a function to standardize speaker labels
+    def standardize_label(speaker):
+        # Check if the speaker matches an 'Interviewer' pattern (e.g., "Interviewer 1", "Interviewer 2", etc.)
+        if re.match(r'Interviewer \d+', speaker):
+            return 'Interviewer'
+        return speaker
+    
+    # Apply the standardization function to the 'Speaker' column
+    df['Speaker'] = df['Speaker'].apply(standardize_label)
+    
     return df
 
 def aggregate_counts(df, groupby_columns):
@@ -442,14 +428,13 @@ def generate_word_clouds(
         if save_fig:
             # Sanitize filename
             sanitized_title = title.replace(":", "_").replace(",", "_").replace(" ", "_")
-            plt.savefig(f'./outputs/wordcloud_{sanitized_title}.png', dpi=800,bbox_inches="tight")
+            plt.savefig(f'./images/wordcloud_{sanitized_title}.png', dpi=800,bbox_inches="tight")
         plt.show()
 
 ### Topics Analysis
 import networkx as nx
 import math
 import matplotlib.colors as mcolors
-
 
 def build_network_from_interviews(df_interviews, include_self_loops=True):
     """
@@ -506,6 +491,7 @@ def build_network_from_interviews(df_interviews, include_self_loops=True):
                     G.add_edge(u, v, weight=1)
 
     return G
+
 def plot_topic_transition_network(
     G,
     title="Topic Transition Network",

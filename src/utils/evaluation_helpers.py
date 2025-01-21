@@ -818,7 +818,6 @@ def process_folder_text(
     metrics_df = pd.DataFrame(metrics_list)
     return metrics_df
 
-
 def extract_text_WER(file_name):
     """
     Read and remove timestamps and speaker labels from a transcript (file text).

@@ -2,7 +2,7 @@
 
 This repository provides a scalable and automated pipeline for transcription and diarization of audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in structured formats like text and CSV files.
 
-![Project Workflow](images/WD_pipeline.png)
+![Project Workflow](src/images/WD_pipeline.png)
 
 # Instalation
 
@@ -25,6 +25,7 @@ After ensuring the prerequisites are set up, proceed with creating the folowing 
 conda create --name wd python=3.10 --yes
 conda activate wd
 pip install -c constraints.txt -r requirements.txt
+python -m spacy download en_core_web_sm
 ``` 
 
 # Usage

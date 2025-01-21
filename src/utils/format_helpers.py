@@ -6,7 +6,14 @@ import pandas as pd
 from datetime import timedelta
 
 def get_files(directory, extensions):
-    """Get a list of files in the specified directory and its subdirectories with given extensions."""
+    """
+    Get a list of files in the specified directory and its subdirectories with given extensions.
+    Args:
+        directory (str): The path to the directory to search for files.
+        extensions (list of str): A list of file extensions to filter the files.
+    Returns:
+        list of str: A list of file paths that match the given extensions.
+    """
     files = []
 
     for root, dirs, files_in_dir in os.walk(directory):
@@ -17,7 +24,13 @@ def get_files(directory, extensions):
     return files
 
 def extract_id(name):
-    """Extract numeric ID from the file name."""
+    """
+    Extract numeric ID from the file name.
+    Args:
+        name (str): The file name from which to extract the numeric ID.
+    Returns:
+        int or None: The extracted numeric ID if found, otherwise None.
+    """
     match = re.search(r'(\d+)', name)
     if match:
         participant_id = int(match.group(0))
@@ -27,7 +40,17 @@ def extract_id(name):
     return participant_id
 
 def convert_str_to_csv(str_file, experiment='Not Specified'):
-    """Convert a single .str file to a CSV file."""
+    """
+    Convert a single .str file to a CSV file.
+    Args:
+        str_file (str): The path to the .str file to be converted.
+        experiment (str, optional): The name of the experiment. Defaults to 'Not Specified'.
+    Returns:
+        None
+    The function reads the content of the .str file, extracts relevant information using a regular expression,
+    and writes the extracted data to a CSV file. The CSV file will have the following columns:
+    'Experiment', 'File Name', 'Id', 'Content Type', 'Start Time', 'End Time', 'Speaker', and 'Content'.
+    """
     csv_file = os.path.splitext(str_file)[0] + '.csv'
 
     with open(str_file, 'r', encoding='utf-8-sig') as file:
@@ -66,7 +89,21 @@ def format_timedelta(td):
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def analyze_audio_files(directories, extensions):
-    """Analyze audio files and collect their properties."""
+    """
+    Analyze audio files and collect their properties.
+    Parameters:
+    directories (list of str): List of directories to search for audio files.
+    extensions (list of str): List of file extensions to filter audio files.
+    Returns:
+    pd.DataFrame: A DataFrame containing the properties of the audio files, including:
+        - File Name (str): The name of the audio file without extension.
+        - Format (str): The file extension of the audio file.
+        - Id (str): An extracted identifier from the file name.
+        - Duration (str): The duration of the audio file formatted as HH:MM:SS.
+        - Duration_timedelta (timedelta): The duration of the audio file as a timedelta object.
+        - Duration_sec (float): The duration of the audio file in seconds.
+        - Experiment (str): The name of the directory containing the audio file.
+    """
     data = []
     for directory in directories:
         audio_files = get_files(directory, extensions)

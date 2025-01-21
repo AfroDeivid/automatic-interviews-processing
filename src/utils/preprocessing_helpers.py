@@ -85,7 +85,6 @@ def organize_csv_files_by_experiment(source_dir, destination_dir):
             except Exception as e:
                 print(f"Error processing file {filename}: {e}")
 
-
 def process_files(raw_folder, destination_folder, fillers_words= None, roles=False, text_format=False,time_stamps=False ,conditions=None, turn=False):
     """
     A flexible function to preprocess CSV files.
@@ -175,9 +174,8 @@ def visual_clean(text):
 
 def simpler_clean(text, filler_words=None):
     """
-    Cleans the text by removing filler words and applying visual cleaning.
+    Cleans the text by removing "Vocalized Fillers" and applying visual cleaning.
     """
-
     # Remove filler words from the text
     if filler_words:
         filler_words_pattern = r'\b(' + '|'.join(map(re.escape, filler_words)) + r')\b'
@@ -189,7 +187,6 @@ def simpler_clean(text, filler_words=None):
 
     # Apply visual cleaning for further adjustments
     return visual_clean(text)
-
 
 def assign_roles(data, file_name= None):
     """
@@ -299,7 +296,6 @@ def add_turn_index(
 
     return df
 
-
 def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timestamps=False):
     """
     Converts a CSV file to a dialogue-style text file with only Speaker and Content,
@@ -365,7 +361,6 @@ def convert_csv_to_dialogue_merge_speakers(input_csv, output_txt, include_timest
             else:
                 dialogue_line = f"[{previous_speaker}]: {dialogue_buffer}\n\n"
             txtfile.write(dialogue_line)
-
 
 def convert_csv_to_dialogue_with_original(input_csv, output_txt, include_timestamps=False):
     """
@@ -519,7 +514,6 @@ def preprocessing_csv(str_file):
     print(f"Saved preprocessed file to {preproced_csv_path}")
     # Save it also in text version
     convert_csv_to_dialogue_merge_speakers(preproced_csv_path,preproced_csv_path)
-
 
 def match_transcripts(reference_df, target_df):
     """

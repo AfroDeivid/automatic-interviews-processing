@@ -1,3 +1,5 @@
+conda remove -n MC --all
+
 ## Excel tip
 
 Select an entire row: ``Shift`` + ``Space``
