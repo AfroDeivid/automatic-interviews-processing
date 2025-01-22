@@ -29,7 +29,7 @@
 
 # gitkeep
 !src/images/readme/WD_pipeline.png
-!data/audio_file.txt
+!/data/eg_audio_file.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
