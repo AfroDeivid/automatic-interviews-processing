@@ -6,8 +6,25 @@ import argparse
 from src.utils.format_helpers import get_files, convert_str_to_csv
 from src.utils.preprocessing_helpers import preprocessing_csv
 
-def process_audio_file(audio_file, whisper_model, language, task=None):
+def process_audio_file(audio_file, whisper_model, language, task=None, overwrite=False):
     """Process a single audio file with the diarization script."""
+    # Determine the expected output file paths
+    base_input_directory = 'data'
+    relative_path = os.path.relpath(audio_file, base_input_directory)
+    experiment_name = relative_path.split(os.sep)[0] # Extract the first folder in 'relative_path'
+
+    str_dir = os.path.join("results", os.path.dirname(relative_path))
+    os.makedirs(str_dir, exist_ok=True)  # Ensure the output directory exists
+
+    base_name = os.path.splitext(os.path.basename(audio_file))[0] # Get the file name without extension
+    str_file = os.path.join(str_dir, f"{base_name}.str")
+    csv_file = str_file.replace(".str", ".csv")
+
+    # Check if transcription already exists
+    if not overwrite and os.path.exists(csv_file):
+        print(f"Skipping {audio_file}: {csv_file} already exists.")
+        return None
+    
     print(f"Processing {audio_file}...")
 
     # Start the timer
@@ -30,14 +47,6 @@ def process_audio_file(audio_file, whisper_model, language, task=None):
     print(f"\n\n Finished processing {audio_file} in {int(elapsed_time // 60)} min and {elapsed_time % 60:.0f} sec")
 
     # Convert .str file to .csv format
-    base_input_directory = 'data'
-    relative_path = os.path.relpath(audio_file, base_input_directory)  
-    experiment_name = relative_path.split(os.sep)[0]  # Extract the first folder in 'relative_path'
-
-    str_dir = os.path.join("results", os.path.dirname(relative_path)) 
-    base_name = os.path.splitext(os.path.basename(audio_file))[0]  # Get the file name without extension
-    str_file = os.path.join(str_dir,f"{base_name}.str")
-
     convert_str_to_csv(str_file, experiment_name)
 
     return str_file
@@ -83,6 +92,11 @@ def main():
         default=[".m4a",".mp4",".wav"],
         help="List of allowed audio file extensions."
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="If specified, overwrite existing transcriptions."
+    )
 
     args = parser.parse_args()
 
@@ -97,7 +111,9 @@ def main():
     # Process each audio file
     str_files = []
     for audio_file in audio_files:
-        str_files.append(process_audio_file(audio_file, args.whisper_model, args.language, args.task))
+        str_file = process_audio_file(audio_file, args.whisper_model, args.language, args.task, args.overwrite)
+        if str_file:
+            str_files.append(str_file)
 
     # Preprocessing version of the csv, inside `results/processed`
     for str_file in str_files:

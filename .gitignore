@@ -1,5 +1,5 @@
 # Folders
-/data
+#/data
 */results
 /results
 /evaluation
@@ -27,11 +27,9 @@
 !constraints.txt
 !freeze_requirements.txt
 
-# readme images
+# gitkeep
 !src/images/readme/WD_pipeline.png
-
-# Checkpoint files for the tranlation evaluation
-*/BLEURT-20
+!data/audio_file.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
