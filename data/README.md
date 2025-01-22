@@ -1,8 +1,10 @@
-# Automatic Interviews processing
+# Automatic Interviews Processing: From Transcriptions to Insights
 
-This repository provides a scalable and automated pipeline for transcription and diarization of audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in structured formats like text and CSV files.
+This repository provides a scalable and automated pipeline for transcription and diarization of audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in text and CSV format.
 
-![Project Workflow](src/images/WD_pipeline.png)
+Developed by [David Friou](https://github.com/AfroDeivid) as part of a semester project at LNCO Lab.
+
+![Project Workflow](src/images/readme/WD_pipeline.png)
 
 # Instalation
 
@@ -19,13 +21,22 @@ Ensure that FFMPEG is added to your system’s PATH.
 
 ## 2. Install Required Packages
 
-After ensuring the prerequisites are set up, proceed with creating the folowing environement :
+After ensuring the prerequisites are set up, you can proceed with creating the folowing environement :
 
+**Locked Environment Installation**
+This setup recreates the exact environment used for the 
 ```
-conda create --name wd python=3.10 --yes
-conda activate wd
-pip install -c constraints.txt -r requirements.txt
+conda create --name tti python=3.10 --yes
+conda activate tti
+pip install cython
+pip install -r freeze_requirements.txt
 python -m spacy download en_core_web_sm
+``` 
+
+**Flexible / Adaptive Installation**
+If you need more flexibility—like updating certain packages or adapting the repository replace the pip install ``pip install -r freeze_requirements.txt`` step with:
+```
+pip install -c constraints.txt -r requirements.txt 
 ``` 
 
 # Usage

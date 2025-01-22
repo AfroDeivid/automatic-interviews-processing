@@ -1,5 +1,5 @@
 # Folders
-/data
+#/data
 */results
 /results
 /evaluation
@@ -25,8 +25,9 @@
 # Installation files
 !requirements.txt
 !constraints.txt
+!freeze_requirements.txt
 
-# Readme images
+# readme images
 !src/images/readme/WD_pipeline.png
 
 # Checkpoint files for the tranlation evaluation

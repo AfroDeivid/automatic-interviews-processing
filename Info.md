@@ -16,3 +16,11 @@ Copy paste a row and inserted below:
 - ``Shift`` + ``Space``
 - ``Ctrl`` + ``C``
 - ``Ctrl`` + ``+``
+
+
+
+
+
+
+
+
