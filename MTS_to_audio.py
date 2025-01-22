@@ -3,7 +3,6 @@ import subprocess
 
 input_directory = "./data/Grief/MTS"
 output_directory = "./data/Grief"
-base_input_directory = 'data'
 
 for subdir, _, files in os.walk(input_directory):
     for file in files:

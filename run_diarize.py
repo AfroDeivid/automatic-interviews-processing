@@ -79,7 +79,7 @@ def main():
     parser.add_argument(
         "-e", "--extensions",
         type=str,
-        nargs='+', # can give multiples argumens separate by an space
+        nargs='+', # can give multiples arguments separate by a space
         default=[".m4a",".mp4",".wav"],
         help="List of allowed audio file extensions."
     )

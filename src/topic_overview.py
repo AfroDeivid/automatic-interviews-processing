@@ -11,9 +11,9 @@ st.set_page_config(
 )
 
 @st.cache_data
-def load_data(file_path):
+def load_data(file):
     """Load CSV file and return a DataFrame."""
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file)
     # Ensure 'multiple_topics' column is parsed as a list
     if "multiple_topics" in df.columns:
         df["multiple_topics"] = df["multiple_topics"].apply(
@@ -21,8 +21,19 @@ def load_data(file_path):
         )
     return df
 
-# Load data
-df = load_data("df_topic_multiples.csv")
+# Default file path
+default_file_path = "./src/outputs/topics/df_topic.csv"
+
+
+# File uploader
+uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+if uploaded_file is not None:
+    # Use the uploaded file
+    df = load_data(uploaded_file)
+else:
+    # Use the default file
+    st.info(f"No file uploaded. Using the default file: '{default_file_path}'")
+    df = load_data(default_file_path)
 
 # Fixed topic column
 selected_topic_column = "one_topic_name"
@@ -131,7 +142,7 @@ with tab3:
 
     st.markdown(f"**Documents associated with '{selected_topic}' in 'one_topic':**")
     st.dataframe(
-        single_topic_rows[["Experiment", "Id", "Condition", "Speaker","Index","Content"]],
+        single_topic_rows[["Experiment", "Id", "Condition", "Speaker", "Index", "Content"]],
         use_container_width=True,
         hide_index=True
     )
@@ -139,7 +150,7 @@ with tab3:
     st.markdown(f"**Extra rows associated with '{selected_topic}' in 'multiple_topics':**")
     if not extra_rows.empty:
         st.dataframe(
-            extra_rows[["Experiment", "Id", "Condition", "Speaker","Index","Content", "multiple_topics_name"]],
+            extra_rows[["Experiment", "Id", "Condition", "Speaker", "Index", "Content", "multiple_topics_name"]],
             use_container_width=True,
             hide_index=True
         )

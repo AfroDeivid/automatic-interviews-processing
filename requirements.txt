@@ -14,3 +14,4 @@ seaborn
 bs4
 wordcloud
 spacy
+streamlit
