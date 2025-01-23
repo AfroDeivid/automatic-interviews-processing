@@ -71,7 +71,7 @@ The pipeline supports nested folder structures, making it easy to process multip
 - The pipeline recursively processes all audio files within these folders and subfolders.
 
 ## Transcription & Diarization (Audio-to-Text)
-Use the [run_diarize.py](./run_diarize.py)* script to transcribe and diarize audio:
+Use the [run_diarize.py](./run_diarize.py) script to transcribe and diarize audio:
 
 - **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash
@@ -87,7 +87,18 @@ If only ``language`` is specified, the model will attempt to translate any detec
 
 To improve performance, specify the task as ``translate`` if you know in advance that the audio is in a certain language (e.g., French) and want to translate it into English.
 
-*See [run_diarize.py](./run_diarize.py) for additional parameter options.*
+- You can view the list of all supported languages along with their corresponding language codes just here: [Languages](src/whisper_diarization/helpers.py)
+
+| Parameter         | Description                                         | Default                         |
+|-------------------|-----------------------------------------------------|---------------------------------|
+| **`-d, --directory`** | Path to the directory containing audio files.       | None                 |
+| **`--whisper_model`** | Name of the Whisper model used for transcription.   | None                      |
+| **``--language ``**       | Language code for transcription (e.g., `fra` for French, `eng` for English). | None                            |
+| **``--task ``**           | Task to perform (e.g., "transcribe", "translate").  | None                            |
+| **``-e, --extensions``**      | List of allowed audio file extensions.              | [".m4a", ".mp4", ".wav"]        |
+| **``--overwrite``**       | Overwrites existing transcriptions if specified.    | False                           |
+
+*See [run_diarize.py](./run_diarize.py) for additional information.*
 
 ## Outputs
 - **Text Format:** Simplified and easy-to-read files for manual review.
