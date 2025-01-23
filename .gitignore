@@ -5,8 +5,6 @@
 /evaluation
 /interviews_corrected
 /deprecated
-*/outputs/*
-*/images/*
 /Dataset
 
 # Files types
@@ -21,6 +19,7 @@
 *.xlsx
 *.DS_Store
 *.pkl
+*.png
 
 # Installation files
 !requirements.txt
