@@ -118,7 +118,6 @@ For a more modular approach you can use [preprocessing notebook](./src/preproces
 - [nemo_msdd_configs/](./nemo_msdd_configs/): ``.yaml`` configs files for the diarization task.
 - [src/preprocessing.ipynb](./src/preprocessing.ipynb) : Modular workflow to clean and preprocess transcripts into differents format, adapting them to different research needs.
 
-
 ## Analysis Text/Topics (after manual verification)
 
 - [src/evaluation.ipynb](./src/evaluation.ipynb) : Assesses the performance of of the transcripts (predictions) after manual verification.
@@ -127,7 +126,6 @@ For a more modular approach you can use [preprocessing notebook](./src/preproces
 - [src/analysis_topics.ipynb](./src/analysis_topics.ipynb) : Explores identified topics using two different approaches (Overview and specific)
 - [src/topic_overview.ipynb](./src/topic_overview.py) : A Streamlit web app used for the *Semi-Automatic* approach of looking at specific topics.
   - Run via ``streamlit run  .\src\topic_overview.py``.
-
 
 ## Helpers files ``/src/utils/``
 
