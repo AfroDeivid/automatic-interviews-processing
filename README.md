@@ -2,7 +2,7 @@
 
 This repository provides a scalable and automated pipeline for transcription and diarization of audio interviews, tailored to handle real-world challenges such as noisy recordings, overlapping speakers, and multi-language scenarios. It leverages open-source tools, including **Whisper** and **NeMo MSDD**, to deliver accurate transcription and speaker diarization outputs in text and CSV format.
 
-Developed by [David Friou](https://github.com/AfroDeivid) as part of a semester project at LNCO Lab.
+Developed by [David Friou](https://github.com/AfroDeivid) as part of a semester project at [LNCO Lab](https://www.epfl.ch/labs/lnco/).
 
 ![Project Workflow](src/images/readme/WD_pipeline.png)
 
