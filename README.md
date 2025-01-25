@@ -15,9 +15,9 @@ Developed by [David Friou](https://github.com/AfroDeivid) as part of a semester 
    2. [Transcription & Diarization (Audio-to-Text)](#transcription--diarization-audio-to-text)  
    3. [Outputs](#outputs)  
 3. [File Structure](#file-structure)  
-   1. [Audio-to-Text](#audio-to-text)  
-   2. [Analysis Text/Topics (after manual verification)](#analysis-texttopics-after-manual-verification)  
-   3. [Helpers Files](#helpers-files-srcutils)  
+   1. [Audio-to-Text Processing](#audio-to-text-processing)  
+   2. [Transcript Evaluation](#transcript-evaluation)  
+   3. [Text and Topic Analysis](#text-and-topic-analysis) 
 4. [Mentions](#mentions)
 
 ## Features
@@ -25,7 +25,8 @@ Developed by [David Friou](https://github.com/AfroDeivid) as part of a semester 
 - **End-to-End Pipeline:** From raw audio (multiple formats) to cleaned, diarized transcripts in `.txt` and `.csv`.  
 - **Multi-Language Support:** Enabling automatic language detection or user-defined translation tasks.  
 - **Scalable Processing:** Processes nested folder structures, allowing large numbers of audio files spread across multiple experiments.  
-- **Post-Processing & Analysis:** Additional scripts and notebooks for text cleaning, speaker-role prediction (interviewer vs. participant), and topic modeling.
+- **Post-Processing:** Includes scripts and workflows for text cleaning, removing fillers, and predicting speaker roles (e.g., interviewer vs. participant) to prepare transcripts for analysis.  
+- **Analysis & Topic Modeling:** Provides notebooks for detailed **text** analysis, including word count, keyword extraction, and topic modeling to uncover themes and patterns within the transcripts. 
 
 # Installation
 
@@ -55,7 +56,7 @@ python -m spacy download en_core_web_sm
 ``` 
 
 **Flexible / Adaptive Installation**  
-If you need more flexibility—like updating certain packages or adapting the repository replace the pip install ``pip install -r freeze_requirements.txt`` step with:
+If you need more flexibility, like updating certain packages or adapting the repository replace the ``pip install -r freeze_requirements.txt`` step with:
 ```
 pip install -c constraints.txt -r requirements.txt 
 ``` 
@@ -120,29 +121,45 @@ For a more modular approach you can use [preprocessing notebook](./src/preproces
 
 # File Structure
 
-## Audio-to-Text
+## Audio-to-Text Processing  
+This section focuses on converting raw audio data into text through transcription and diarization, enabling subsequent analysis.  
 
-- [src/pre_analysis.ipynb](./src/pre_analysis.ipynb) : Raw analysis of audio files and experiment structure.
-- [MTS_to_audio.py](./MTS_to_audio.py) : Converts ``.MTS`` videos into ``.wav`` audio format.
-- [run_diarize.py](./run_diarize.py) : Main script to batch-process transcription & diarization of audio.
-- [/src/whisper_diarization](./src/whisper_diarization/) : Contains the source code from the Whisper-Diarization framework. (see [Mentions](#mentions))
-- [nemo_msdd_configs/](./nemo_msdd_configs/): ``.yaml`` configs files for the diarization task.
-- [src/preprocessing.ipynb](./src/preprocessing.ipynb) : Modular workflow to clean and preprocess transcripts into differents format, adapting them to different research needs.
+- **Preprocessing and Conversion:**  
+  - [src/pre_analysis.ipynb](./src/pre_analysis.ipynb): Analyzes audio files and experiment structure.  
+  - [MTS_to_audio.py](./MTS_to_audio.py): Converts `.MTS` videos into `.wav` format for processing.  
 
-## Analysis Text/Topics (after manual verification)
+- **Transcription & Diarization:**  
+  - [run_diarize.py](./run_diarize.py): The main script for batch-processing transcription and speaker diarization.  
+  - [/src/whisper_diarization](./src/whisper_diarization/): Source code from the Whisper-Diarization framework. (See [Mentions](#mentions))  
+  - [nemo_msdd_configs/](./nemo_msdd_configs/): YAML configuration files for diarization tasks.  
 
-- [src/evaluation.ipynb](./src/evaluation.ipynb) : Assesses the performance of of the transcripts (predictions) after manual verification.
-- [src/analysis_text.ipynb](./src/analysis_text.ipynb) : Text analysis of the transcription content (such as distributions of conditions, interviewers, word count, keywords)
-- [src/bert_topic.ipynb](./src/bert_topic.ipynb) : Performs topic modeling on the transcripts.
-- [src/analysis_topics.ipynb](./src/analysis_topics.ipynb) : Explores identified topics using two different approaches (Overview and specific)
-- [src/topic_overview.ipynb](./src/topic_overview.py) : A Streamlit web app used for the *Semi-Automatic* approach of looking at specific topics.
-  - Run via ``streamlit run  .\src\topic_overview.py``.
+- **Transcript Preprocessing:**  
+  - [src/preprocessing.ipynb](./src/preprocessing.ipynb): Modular workflow for cleaning and preparing transcripts for further analysis.  
 
-## Helpers files ``/src/utils/``
+``/src/utils/`` [format_helpers.py](./src/utils/format_helpers.py) and [preprocessing_helpers.py](./src/utils/preprocessing_helpers.py): Assist with structured formatting and transcript preprocessing.  
 
-- [format_helpers.py](./src/utils/format_helpers.py) and [preprocessing_helpers.py](./src/utils/preprocessing_helpers.py) : Assist with structured formatting and transcript preprocessing.
-- [analysis_helpers.py](./src/utils/analysis_helpers.py) : Shared utility functions for text and topic analyses.
-- [evaluation_helpers.py](./src/utils/evaluation_helpers.py) and [text_html.py](./src/utils/text_html.py) : Functions for transcription/diarization performance evaluations.
+## Transcript Evaluation  
+This section focuses on validating transcription quality and ensuring the accuracy of the processed data.  
+ 
+- [src/evaluation.ipynb](./src/evaluation.ipynb): Assesses transcription accuracy after manual verification, ensuring reliable input for downstream analyses.  
+
+``/src/utils/`` [evaluation_helpers.py](./src/utils/evaluation_helpers.py) and [text_html.py](./src/utils/text_html.py): Provides functions for transcription/diarization performance evaluations.
+
+## Text and Topic Analysis  
+This section delves into analyzing text for patterns and extracting thematic insights through topic modeling.  
+
+- **Text Analysis:**  
+  - [src/analysis_text.ipynb](./src/analysis_text.ipynb): Explores transcript content, including distributions (e.g., conditions, interviewers), word count, and keywords.  
+
+- **Automated Topic Modeling:**  
+  - [src/bert_topic.ipynb](./src/bert_topic.ipynb): Performs topic modeling to identify themes within the transcripts.  
+
+- **Topic Analysis & Visualization:**  
+  - [src/analysis_topics.ipynb](./src/analysis_topics.ipynb): Provides high-level overviews and detailed analyses of identified topics.  
+  - [src/topic_overview.ipynb](./src/topic_overview.py): A Streamlit app for interactively exploring specific topics. 
+    - Run via `streamlit run .\src\topic_overview.py`. 
+
+``/src/utils/`` [analysis_helpers.py](./src/utils/analysis_helpers.py): Shared utility functions for text and topic analyses.
 
 # Mentions
 

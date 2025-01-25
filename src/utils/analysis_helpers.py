@@ -86,13 +86,12 @@ def aggregate_counts(df, groupby_columns):
 
     return aggregated
 
-def stripplot(df,x_column,y_column, hue_column=None):
+def stripplot(df,x_column,y_column, palette=None):
 
     sns.set(style="whitegrid")
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x=x_column, y=y_column, data=df, hue=hue_column)
-    sns.stripplot(x=x_column, y=y_column, data=df, hue=hue_column, linewidth=1, edgecolor="k",
-                  dodge=True, jitter=True, legend=False)
+    sns.boxplot(x=x_column, y=y_column, data=df, palette=palette, hue=x_column)
+    sns.stripplot(x=x_column, y=y_column, data=df, alpha=0.7, edgecolor='k', color='gray',linewidth=1)
     plt.title(f'{x_column} Distribution by {y_column}')
     plt.xlabel(x_column)
     plt.ylabel(y_column)
@@ -256,16 +255,17 @@ def count_word_frequencies(
     normalize: bool = False
 ) -> pd.DataFrame:
     """
-    Count word frequencies for the specified groupings.
+    Count word frequencies, with optional grouping and normalization.
 
     Parameters:
-    - df (pd.DataFrame): The DataFrame containing the data.
-    - tokenized_column (str): Column containing pre-tokenized text content (list of words).
-    - groupby_columns (list of str, optional): Columns to group by (e.g., Participant, File).
-    - normalize (bool): Whether to normalize word counts by total word count in each group.
+    - df (pd.DataFrame): DataFrame containing the data.
+    - tokenized_column (str): Column with tokenized text (space-separated words or lists).
+    - groupby_columns (list of str, optional): Columns to group by (e.g., Participant, Experiment).
+    - normalize (bool): Normalize frequencies to avoid groups with more text dominating results.
 
     Returns:
-    - pd.DataFrame: DataFrame with word frequencies and optional normalization.
+    - pd.DataFrame: Contains grouping columns (if any), 'Word', and 'Frequency'.
+      Normalized frequencies represent relative usage within groups.
     """
     results = []
 
@@ -324,7 +324,6 @@ def plot_word_frequencies(
         n_level = group_df[level_column].nunique()
         group_df = group_df.groupby('Word').agg({frequency_column: 'sum'}).reset_index()
         group_df[frequency_column] = group_df[frequency_column] / n_level
-
 
         # Get top N words for the group
         top_words = group_df.nlargest(top_n, frequency_column)
@@ -626,3 +625,81 @@ def plot_topic_transition_network(
         plt.savefig(file_name, dpi=600, bbox_inches="tight")
 
     plt.show()
+
+def tag_topic(df, id_topic, exclude_indices, name_tag, multiple=False):
+    """
+    Tags rows in a DataFrame based on a specified topic.
+    Parameters:
+    df (pandas.DataFrame): The DataFrame containing the data.
+    id_topic (int or str): The topic identifier to tag.
+    exclude_indices (list or set): Indices to exclude from tagging.
+    name_tag (str): The tag name to apply to the rows.
+    multiple (bool, optional): If True, tag rows with multiple topics. Defaults to False.
+    Returns:
+    None: The function modifies the DataFrame in place.
+    """
+    single_topic_rows = df[df['one_topic'] == id_topic]
+    multiple_topic_rows = df[df['multiple_topics'].map(lambda x: id_topic in x)]
+    # Identify indices to tag from single topic or topics distribution
+    rows_to_tag = single_topic_rows[~single_topic_rows.index.isin(exclude_indices)]
+    if multiple:
+        rows_to_tag = multiple_topic_rows[~multiple_topic_rows.index.isin(exclude_indices)]
+
+    # Apply the tag
+    df.loc[rows_to_tag.index, "tag"] = name_tag
+
+
+def influence_analysis(df, tag_name):
+    """
+    Analyzes the influence of the Interviewer on participants mentioning a specific topic.
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the entire dataset.
+    tag_name (str): The name of the topic tag to analyze.
+    Returns:
+    None: This function prints the analysis results directly.
+    The function performs the following analysis:
+    1. Identifies the first mentions of the topic by sorting and grouping the data.
+    2. Counts the number of unique participants who mentioned the topic.
+    3. Determines which files had the Interviewer mention the topic first.
+    4. Counts the number of participants influenced by the Interviewer's first mention.
+    5. Collects and prints detailed information for each participant who mentioned the topic.
+    """
+    topic_rows = df[df['tag'] == tag_name]
+    first_mentions = (
+        topic_rows
+        .sort_values(by='turn_index')
+        .groupby('File Name', group_keys=False)
+        .head(1)
+        .reset_index(drop=True)
+    )
+
+    # Get participant IDs who mentioned the topic
+    participant_rows = topic_rows[topic_rows['Speaker'] == 'Participant']
+    participant_ids = participant_rows['Id'].unique()
+    n_participants = len(participant_ids)
+
+    # Find files where the Interviewer mentioned the topic first
+    files_with_interviewer_first = first_mentions[first_mentions['Speaker'] == 'Interviewer']['File Name']
+
+    # Count participants influenced by the Interviewer's first mention
+    influenced_participants = participant_rows[
+        participant_rows['File Name'].isin(files_with_interviewer_first)
+    ]['Id'].unique()
+    m_feedback = len(influenced_participants)
+
+    # Collect additional information
+    participant_info = participant_rows[['Id', 'File Name', 'turn_index', 'Experiment']].drop_duplicates()
+
+    # Print results
+    print(f"Topic: {tag_name}")
+    print(f"Number of participants who mentioned the topic: {n_participants}")
+    print(f"Participants ID who mentioned the topic: {list(participant_ids)}")
+
+    print(f"Number of participants influenced by Interviewer mentioning the topic first: {m_feedback}")
+    print(f"Participants ID influenced by Interviewer's first mention: {list(influenced_participants)}")
+
+    print("\nDetailed information for each participant:")
+    for participant_id in participant_ids:
+        participant_data = participant_info[participant_info['Id'] == participant_id]
+        for _, row in participant_data.iterrows():
+            print(f"Experiment: {row['Experiment']}, Participant ID: {row['Id']}, File Name: {row['File Name']}, Turn Index: {row['turn_index']}")
