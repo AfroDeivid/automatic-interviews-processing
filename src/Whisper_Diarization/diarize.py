@@ -46,6 +46,11 @@ parser.add_argument(
     "-a", "--audio", help="name of the target audio file", required=True
 )
 parser.add_argument(
+    "-d", "--directory",
+    default=".",
+    help="directory to save the output files",
+)
+parser.add_argument(
     "--no-stem",
     action="store_false",
     dest="stemming",
@@ -272,19 +277,13 @@ wsm = get_realigned_ws_mapping_with_punctuation(wsm)
 ssm = get_sentences_speaker_mapping(wsm, speaker_ts)
 
 # Save results
-base_input_directory = 'data' 
-
 base_name = os.path.splitext(os.path.basename(args.audio))[0]  # Get the file name without extension
-relative_path = os.path.relpath(args.audio, base_input_directory)  
-output_dir = os.path.join("results", os.path.dirname(relative_path)) 
+os.makedirs( args.directory, exist_ok=True)  # Create the directory if it doesn't exist
 
-print("Output Dir:", output_dir)
-os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
-
-with open(os.path.join(output_dir, f"{base_name}.txt"), "w", encoding="utf-8-sig") as f:
+with open(os.path.join(args.directory, f"{base_name}.txt"), "w", encoding="utf-8-sig") as f:
     get_speaker_aware_transcript(ssm, f)
 
-with open(os.path.join(output_dir, f"{base_name}.str"), "w", encoding="utf-8-sig") as srt:
+with open(os.path.join(args.directory, f"{base_name}.str"), "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
 
 cleanup(temp_path)
