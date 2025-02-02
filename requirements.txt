@@ -5,7 +5,7 @@ faster-whisper>=1.1.0
 bertopic
 git+https://github.com/MahmoudAshraf97/demucs.git@4273070a70ded308ddfd0879d267bbd06f89a1b7
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git@5a0dd7f4fd56687f59405aa8eba1144393d8b74b
-git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git@01fed55041015053aed592069a49debadf5d01c3
+git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git@7578992b6647a98e65b539436d88bc7bba690374
 ipykernel
 nbformat
 pandas

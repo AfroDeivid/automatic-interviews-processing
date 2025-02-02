@@ -1,1 +1,1 @@
-Put your audio files in this folder ;)
+You can also put your folders with the audio files here, to have easier paths ;)

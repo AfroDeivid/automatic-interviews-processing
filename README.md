@@ -67,21 +67,20 @@ pip install -c constraints.txt -r requirements.txt
 
 The pipeline supports nested folder structures, making it easy to process multiple experiments and interviews. To use the pipeline:
 
-- Simply upload your *main folder(s)* with your audio files into the ``data`` folder.
-  - Each *main folders*, can corresponds to an experiment (e.g., OBE1, OBE2, Compassion).
-- The pipeline recursively processes all audio files within these folders and subfolders.
+- Simply indicate the path to your folder with your audio files.
+- The pipeline recursively processes all audio files within these folder and subfolders.
 
 ## Transcription & Diarization (Audio-to-Text)
 Use the [run_diarize.py](./run_diarize.py) script to transcribe and diarize audio:
 
 - **Transcribe the audio in his original language :** *(specified with --language)* 
 ```bash
-python run_diarize.py -d .\data\OBE1 --whisper-model large-v3 --language en
+python run_diarize.py -d path_to_folder --whisper-model large-v3 --language en
 ```
 
 - **Transcribe and translate the audio to english :** *(e.g. from french to english)*
 ```bash
-python run_diarize.py -d .\data\OBE1 --whisper-model large-v3 --language fr --task translate
+python run_diarize.py -d path_to_folder --whisper-model large-v3 --language fr --task translate
 ```
 
 If only ``language`` is specified, the model will attempt to translate any detected language into the specified language.
@@ -104,7 +103,7 @@ To improve performance, specify the task as ``translate`` if you know in advance
 ## Outputs
 - **Text Format:** Simplified and easy-to-read files for manual review.
 - **CSV Format:** A structured format ideal for analysis, with columns such as:
-  - Experiment name (derived from the main folder).
+  - Experiment name (derived from the name of the folder directory).
   - File name.
   - Participant ID.
   - Timestamps for each segment.
@@ -169,7 +168,6 @@ This work relies heavily on the **Whisper-Diarization** framework to handle tran
 @unpublished{hassouna2024whisperdiarization,
   title={Whisper Diarization: Speaker Diarization Using OpenAI Whisper},
   author={Ashraf, Mahmoud},
-  year={2024}
-}
+  year={2024}}
 ```
 For additional details, visit the [Whisper-Diarization GitHub repository](https://github.com/MahmoudAshraf97/whisper-diarization).

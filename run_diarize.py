@@ -9,9 +9,10 @@ from src.utils.preprocessing_helpers import preprocessing_csv
 def process_audio_file(audio_file, directory, whisper_model, language, task=None, overwrite=False):
     """Process a single audio file with the diarization script."""
 
-    # Determine the expected output file paths
+    # Determine the output file paths
     experiment_name = os.path.basename(os.path.normpath(directory))  # Extract only the last folder name
     relative_path = os.path.relpath(audio_file, directory)
+
     output_dir = os.path.join("results", experiment_name, os.path.dirname(relative_path))
     os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
 
@@ -96,7 +97,6 @@ def main():
         action="store_true",
         help="If specified, overwrite existing transcriptions."
     )
-
     args = parser.parse_args()
 
     # Get audio files
