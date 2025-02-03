@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lnco-transcribe"
+version = "1.0.0"
+description = "A transcription tool with diarization"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "David Friou", email = "david.friou@hotmail.com" }]
+license = { text = "MIT" }
+
+dependencies = ["wget",
+"nemo_toolkit[asr]==2.0.0rc0",
+"nltk",
+"faster-whisper>=1.1.0",
+"bertopic",
+"demucs @ git+https://github.com/MahmoudAshraf97/demucs.git@4273070a70ded308ddfd0879d267bbd06f89a1b7",
+"deepmultilingualpunctuation @ git+https://github.com/oliverguhr/deepmultilingualpunctuation.git@5a0dd7f4fd56687f59405aa8eba1144393d8b74b",
+"ctc-forced-aligner @ git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git@7578992b6647a98e65b539436d88bc7bba690374",
+"ipykernel",
+"nbformat",
+"pandas",
+"pydub",
+"seaborn",
+"bs4",
+"wordcloud",
+"spacy",
+"streamlit",]
+
+[tool.setuptools]
+include-package-data = true
+
+[project.scripts]
+lnco-transcribe = "run_diarize:main"

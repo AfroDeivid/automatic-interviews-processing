@@ -162,7 +162,7 @@ This section delves into analyzing text for patterns and extracting thematic ins
 
 # Mentions
 
-This work relies heavily on the **Whisper-Diarization** framework to handle transcription and diarization of audio files into structured text formats.
+This work relies heavily on the **Whisper-Diarization** framework to handle transcription and diarization of audio files into structured text formats, which is licensed under the BSD 2-Clause License.
 
 ```bibtex
 @unpublished{hassouna2024whisperdiarization,
