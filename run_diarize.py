@@ -3,8 +3,8 @@ import subprocess
 import time
 import argparse
 
-from utils.format_helpers import get_files, convert_str_to_csv
-from utils.preprocessing_helpers import preprocessing_csv
+from src.utils.format_helpers import get_files, convert_str_to_csv
+from src.utils.preprocessing_helpers import preprocessing_csv
 
 def process_audio_file(audio_file, directory, whisper_model, language, task=None, overwrite=False):
     """Process a single audio file with the diarization script."""
