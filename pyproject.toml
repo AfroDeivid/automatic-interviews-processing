@@ -12,6 +12,8 @@ authors = [{ name = "David Friou", email = "david.friou@hotmail.com" }]
 license = { text = "MIT" }
 
 dependencies = ["wget",
+"huggingface_hub<0.24",
+"numpy<2",
 "nemo_toolkit[asr]==2.0.0rc0",
 "nltk",
 "faster-whisper>=1.1.0",
