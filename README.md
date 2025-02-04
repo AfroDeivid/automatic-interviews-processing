@@ -50,7 +50,6 @@ This setup recreates the *exact environment* used during my semester project:
 ```
 conda create --name tti python=3.10 --yes
 conda activate tti
-pip install cython
 pip install -r freeze_requirements.txt
 python -m spacy download en_core_web_sm
 ``` 
@@ -58,6 +57,7 @@ python -m spacy download en_core_web_sm
 **Flexible / Adaptive Installation**  
 If you need more flexibility, like updating certain packages or adapting the repository replace the ``pip install -r freeze_requirements.txt`` step with:
 ```
+pip install cython
 pip install -c constraints.txt -r requirements.txt 
 ``` 
 
@@ -73,7 +73,7 @@ The pipeline supports nested folder structures, making it easy to process multip
 ## Transcription & Diarization (Audio-to-Text)
 Use the [run_diarize.py](./run_diarize.py) script to transcribe and diarize audio:
 
-- **Transcribe the audio in his original language :** *(specified with --language)* 
+- **Transcribe the audio in its original language :** *(specified with --language)* 
 ```bash
 python run_diarize.py -d path_to_folder --whisper-model large-v3 --language en
 ```

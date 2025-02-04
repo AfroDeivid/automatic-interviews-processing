@@ -113,11 +113,8 @@ def main():
         str_file = process_audio_file(audio_file, args.directory, args.whisper_model, args.language, args.task, args.overwrite)
         if str_file:
             str_files.append(str_file)
-
-    # Preprocessing version of the csv, inside `results/processed`
-    for str_file in str_files:
-        print(str_file)
-        preprocessing_csv(str_file)
+            # Preprocessing version of the csv, inside `results/processed`
+            preprocessing_csv(str_file)
 
 if __name__ == "__main__":
     main()
