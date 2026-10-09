@@ -53,7 +53,35 @@ def test_translate_writes_to_language_to_eng_folder(tmp_path, monkeypatch):
     assert Path(str_file) == Path("results", "OBE", "fr_to_eng", "P1.str")
     cmd = calls[0]
     assert cmd[cmd.index("--task") + 1] == "translate"
+    assert cmd[cmd.index("--diarizer") + 1] == "msdd"
     assert cmd[cmd.index("-d") + 1] == os.path.join("results", "OBE", "fr_to_eng", "")
+
+
+def test_diarizer_option_reaches_diarize_script(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    audio_dir = tmp_path / "OBE"
+    audio_dir.mkdir()
+    (audio_dir / "P1.wav").touch()
+    calls = []
+    monkeypatch.setattr(run_diarize, "process_audio_file", lambda *a, **k: calls.append(k) or ("FAILED", "", None))
+    monkeypatch.setattr(run_diarize.time, "sleep", lambda s: None)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["interviews-transcribe", "-d", str(audio_dir), "--diarizer", "sortformer"],
+    )
+
+    run_diarize.main()
+
+    assert [k["diarizer"] for k in calls] == ["sortformer"]
+
+
+def test_unknown_diarizer_is_rejected(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["interviews-transcribe", "-d", ".", "--diarizer", "pyannote"])
+
+    with pytest.raises(SystemExit) as exc:
+        run_diarize.main()
+
+    assert exc.value.code == 2
 
 
 def test_failed_whisper_run_is_logged(tmp_path, monkeypatch):
@@ -81,7 +109,8 @@ def test_failed_whisper_run_is_logged(tmp_path, monkeypatch):
 
 
 @pytest.mark.slow
-def test_end_to_end_transcription(tmp_path, monkeypatch, capfd):
+@pytest.mark.parametrize("diarizer", ["msdd", "sortformer"])
+def test_end_to_end_transcription(tmp_path, monkeypatch, capfd, diarizer):
     """Runs the real pipeline. Set AIP_TEST_AUDIO to a short speech recording (a few seconds)."""
     source = os.environ.get("AIP_TEST_AUDIO")
     if not source:
@@ -94,7 +123,7 @@ def test_end_to_end_transcription(tmp_path, monkeypatch, capfd):
     monkeypatch.setattr(
         "sys.argv",
         ["interviews-transcribe", "-d", str(audio_dir), "--whisper-model", "tiny",
-         "-e", audio.suffix],
+         "-e", audio.suffix, "--diarizer", diarizer],
     )
 
     run_diarize.main()

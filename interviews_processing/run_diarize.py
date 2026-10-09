@@ -52,6 +52,7 @@ def process_audio_file(
     language,
     task=None,
     overwrite=False,
+    diarizer="msdd",
 ):
     """
     Process a single audio file.
@@ -104,6 +105,7 @@ def process_audio_file(
         "--whisper-model", whisper_model,
         "--language", language,
         "--task", task,
+        "--diarizer", diarizer,
     ]
 
     start_time = time.time()
@@ -196,6 +198,14 @@ def main():
         action="store_true",
         help="Overwrite existing transcriptions.",
     )
+    parser.add_argument(
+        "--diarizer",
+        type=str,
+        default="msdd",
+        choices=["msdd", "sortformer"],
+        help="Speaker diarization model: 'msdd' (NeMo MSDD, any number of speakers) or "
+            "'sortformer' (NeMo Streaming Sortformer, newer, at most 4 speakers).",
+    )
 
     args = parser.parse_args()
 
@@ -209,6 +219,7 @@ def main():
     print("Parse extensions:", args.extensions)
     print("Parse language:", args.language)
     print("Parse task:", args.task)
+    print("Parse diarizer:", args.diarizer)
 
     for audio_file in audio_files:
 
@@ -221,6 +232,7 @@ def main():
                 args.language,
                 task="transcribe",
                 overwrite=args.overwrite,
+                diarizer=args.diarizer,
             )
 
             if status == "SUCCESS":
@@ -237,6 +249,7 @@ def main():
             args.language,
             task="translate" if args.task == "translate" else args.task,
             overwrite=args.overwrite,
+            diarizer=args.diarizer,
         )
 
         if status == "SUCCESS":

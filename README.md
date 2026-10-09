@@ -117,6 +117,7 @@ To improve performance, specify the task as ``translate`` if you know in advance
 | **`--also-transcribe`**           | When using ``--task translate``, also transcribes the audio in the original language.  | False                            |
 | **`-e, --extensions`**      | List of allowed audio file extensions.              | `.m4a .mp4 .wav`        |
 | **`--overwrite`**       | Overwrites existing transcriptions if specified.    | False                           |
+| **`--diarizer`**       | Speaker diarization model: `msdd` (NeMo MSDD, any number of speakers) or `sortformer` (NeMo Streaming Sortformer, newer, at most 4 speakers). | `msdd`                           |
 
 *Run ``uv run interviews-transcribe --help`` for all options, or see [run_diarize.py](interviews_processing/run_diarize.py).*
 
