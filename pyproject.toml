@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "wget>=3.2,<4",
-    "nemo-toolkit[asr]>=2.3.0",
+    "nemo-toolkit[asr]>=2.3.0,<3",
     "nltk>=3.9.1,<4",
     "faster-whisper>=1.1.0",
     "demucs",
@@ -22,6 +22,7 @@ dependencies = [
     "numpy<2",
     "indic-numtowords",
     "psutil>=7.0.0,<8",
+    "soundfile",
 ]
 
 [project.optional-dependencies]
@@ -47,6 +48,10 @@ interviews-transcribe = "interviews_processing.run_diarize:main"
 dev = [
     "pytest>=8",
 ]
+
+[tool.uv]
+# onnx (via nemo-toolkit) uses ml_dtypes.float4_e2m1fn but does not declare the minimum version
+constraint-dependencies = ["ml-dtypes>=0.5.0"]
 
 [tool.uv.sources]
 demucs = { git = "https://github.com/MahmoudAshraf97/demucs.git" }

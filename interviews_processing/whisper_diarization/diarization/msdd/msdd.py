@@ -4,8 +4,8 @@ import tempfile
 
 from typing import Union
 
+import soundfile as sf
 import torch
-import torchaudio
 
 from nemo.collections.asr.models.msdd_models import NeuralDiarizer
 from nemo.collections.asr.parts.utils.speaker_utils import rttm_to_labels
@@ -18,11 +18,13 @@ class MSDDDiarizer:
 
     def diarize(self, audio: torch.Tensor):
         with tempfile.TemporaryDirectory() as temp_path:
-            torchaudio.save(
+            # soundfile instead of torchaudio.save: recent torchaudio delegates saving to
+            # torchcodec, which needs a shared FFmpeg build (DLLs) on Windows.
+            sf.write(
                 os.path.join(temp_path, "mono_file.wav"),
-                audio,
+                audio.squeeze(0).cpu().numpy(),
                 16000,
-                channels_first=True,
+                subtype="FLOAT",
             )
 
             manifest_path = os.path.join(temp_path, "manifest.json")

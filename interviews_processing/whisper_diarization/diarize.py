@@ -2,6 +2,8 @@ import argparse
 import logging
 import os
 import re
+import subprocess
+import sys
 
 import faster_whisper
 import torch
@@ -115,9 +117,18 @@ language = process_language_arg(args.language, args.model_name)
 if args.stemming:
     # Isolate vocals from the rest of the audio
 
-    return_code = os.system(
-        f'python -m demucs.separate -n htdemucs --two-stems=vocals "{args.audio}" -o "{temp_outputs_dir}" --device "{args.device}"'
-    )
+    # Same interpreter as this script (a bare `python` may resolve to another environment)
+    return_code = subprocess.run(
+        [
+            sys.executable,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "demucs_separate.py"),
+            "-n", "htdemucs",
+            "--two-stems=vocals",
+            args.audio,
+            "-o", temp_outputs_dir,
+            "--device", args.device,
+        ]
+    ).returncode
 
     if return_code != 0:
         logging.warning(
