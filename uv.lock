@@ -447,12 +447,12 @@ dev = [
 requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'analysis'" },
     { name = "bertopic", marker = "extra == 'analysis'" },
-    { name = "ctc-forced-aligner", git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git" },
-    { name = "deepmultilingualpunctuation", git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git" },
-    { name = "demucs", git = "https://github.com/MahmoudAshraf97/demucs.git" },
+    { name = "ctc-forced-aligner", git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git?rev=11855d1de76af2b490dd2e8e2db2661805ae90a0" },
+    { name = "deepmultilingualpunctuation", git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git?rev=5a0dd7f4fd56687f59405aa8eba1144393d8b74b" },
+    { name = "demucs", git = "https://github.com/MahmoudAshraf97/demucs.git?rev=4273070a70ded308ddfd0879d267bbd06f89a1b7" },
     { name = "en-core-web-sm", marker = "extra == 'analysis'", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "faster-whisper", specifier = ">=1.1.0" },
-    { name = "indic-numtowords", git = "https://github.com/AI4Bharat/indic-numtowords.git" },
+    { name = "indic-numtowords", git = "https://github.com/AI4Bharat/indic-numtowords.git?rev=167927b24ba9c843a1c62021d47fcbe71f6f177f" },
     { name = "ipykernel", specifier = ">=6.29.5,<7" },
     { name = "matplotlib", marker = "extra == 'analysis'" },
     { name = "nbformat", marker = "extra == 'analysis'" },
@@ -1200,7 +1200,7 @@ wheels = [
 [[package]]
 name = "ctc-forced-aligner"
 version = "0.3.0"
-source = { git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git#11855d1de76af2b490dd2e8e2db2661805ae90a0" }
+source = { git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git?rev=11855d1de76af2b490dd2e8e2db2661805ae90a0#11855d1de76af2b490dd2e8e2db2661805ae90a0" }
 dependencies = [
     { name = "nltk" },
     { name = "torch" },
@@ -1639,7 +1639,7 @@ wheels = [
 [[package]]
 name = "deepmultilingualpunctuation"
 version = "1.0.1"
-source = { git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git#5a0dd7f4fd56687f59405aa8eba1144393d8b74b" }
+source = { git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git?rev=5a0dd7f4fd56687f59405aa8eba1144393d8b74b#5a0dd7f4fd56687f59405aa8eba1144393d8b74b" }
 dependencies = [
     { name = "torch" },
     { name = "transformers" },
@@ -1657,7 +1657,7 @@ wheels = [
 [[package]]
 name = "demucs"
 version = "4.1.0a3"
-source = { git = "https://github.com/MahmoudAshraf97/demucs.git#4273070a70ded308ddfd0879d267bbd06f89a1b7" }
+source = { git = "https://github.com/MahmoudAshraf97/demucs.git?rev=4273070a70ded308ddfd0879d267bbd06f89a1b7#4273070a70ded308ddfd0879d267bbd06f89a1b7" }
 dependencies = [
     { name = "dora-search" },
     { name = "einops" },
@@ -2452,7 +2452,7 @@ wheels = [
 [[package]]
 name = "indic-numtowords"
 version = "1.0.2"
-source = { git = "https://github.com/AI4Bharat/indic-numtowords.git#167927b24ba9c843a1c62021d47fcbe71f6f177f" }
+source = { git = "https://github.com/AI4Bharat/indic-numtowords.git?rev=167927b24ba9c843a1c62021d47fcbe71f6f177f#167927b24ba9c843a1c62021d47fcbe71f6f177f" }
 
 [[package]]
 name = "inflect"

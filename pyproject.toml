@@ -54,10 +54,10 @@ dev = [
 constraint-dependencies = ["ml-dtypes>=0.5.0"]
 
 [tool.uv.sources]
-demucs = { git = "https://github.com/MahmoudAshraf97/demucs.git" }
-deepmultilingualpunctuation = { git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git" }
-ctc-forced-aligner = { git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git" }
-indic-numtowords = { git = "https://github.com/AI4Bharat/indic-numtowords.git" }
+demucs = { git = "https://github.com/MahmoudAshraf97/demucs.git", rev = "4273070a70ded308ddfd0879d267bbd06f89a1b7" }
+deepmultilingualpunctuation = { git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git", rev = "5a0dd7f4fd56687f59405aa8eba1144393d8b74b" }
+ctc-forced-aligner = { git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git", rev = "11855d1de76af2b490dd2e8e2db2661805ae90a0" }
+indic-numtowords = { git = "https://github.com/AI4Bharat/indic-numtowords.git", rev = "167927b24ba9c843a1c62021d47fcbe71f6f177f" }
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 
 [build-system]

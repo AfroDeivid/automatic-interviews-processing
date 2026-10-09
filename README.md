@@ -214,4 +214,10 @@ This work relies heavily on the **Whisper-Diarization** framework to handle tran
   author={Ashraf, Mahmoud},
   year={2024}}
 ```
-For additional details, visit the [Whisper-Diarization GitHub repository](https://github.com/MahmoudAshraf97/whisper-diarization).
+For additional details, visit the [Whisper-Diarization GitHub repository](https://github.com/MahmoudAshraf97/whisper-diarization). The adapted code and the list of local changes are documented in [UPSTREAM.md](interviews_processing/whisper_diarization/UPSTREAM.md).
+
+The pipeline also installs the following projects directly from GitHub, pinned to exact commits in `pyproject.toml`:
+[demucs](https://github.com/MahmoudAshraf97/demucs) (vocal separation, fork of [facebookresearch/demucs](https://github.com/facebookresearch/demucs)),
+[ctc-forced-aligner](https://github.com/MahmoudAshraf97/ctc-forced-aligner) (word timestamps),
+[deepmultilingualpunctuation](https://github.com/oliverguhr/deepmultilingualpunctuation) (punctuation restoration) and
+[indic-numtowords](https://github.com/AI4Bharat/indic-numtowords).
