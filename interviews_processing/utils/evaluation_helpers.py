@@ -722,7 +722,7 @@ def diarisation_html(reference_file, prediction_file, output_file, info_ref=None
     return error_durations
 
 ### Text File
-from utils.text_html import process_html_text
+from interviews_processing.utils.text_html import process_html_text
 
 def process_folder_text(
     prediction_folder,

@@ -5,7 +5,6 @@ import re
 
 import faster_whisper
 import torch
-import torchaudio
 
 from ctc_forced_aligner import (
     generate_emissions,
@@ -16,11 +15,9 @@ from ctc_forced_aligner import (
     preprocess_text,
 )
 from deepmultilingualpunctuation import PunctuationModel
-from nemo.collections.asr.models.msdd_models import NeuralDiarizer
 
 from helpers import (
     cleanup,
-    create_config,
     find_numeral_symbol_tokens,
     get_realigned_ws_mapping_with_punctuation,
     get_sentences_speaker_mapping,
@@ -33,12 +30,10 @@ from helpers import (
     write_srt,
 )
 
-# Minimize randomness for reproducibility
-# But still are some sources of randomness inside the models...
-import random
-random.seed(0)
-
 mtypes = {"cpu": "int8", "cuda": "float16"}
+
+pid = os.getpid()
+temp_outputs_dir = f"temp_outputs_{pid}"
 
 # Initialize parser
 parser = argparse.ArgumentParser()
@@ -107,6 +102,13 @@ parser.add_argument(
     help="if you have a GPU use 'cuda', otherwise 'cpu'",
 )
 
+parser.add_argument(
+    "--diarizer",
+    default="msdd",
+    choices=["msdd"],
+    help="Choose the diarization model to use",
+)
+
 args = parser.parse_args()
 language = process_language_arg(args.language, args.model_name)
 
@@ -114,7 +116,7 @@ if args.stemming:
     # Isolate vocals from the rest of the audio
 
     return_code = os.system(
-        f'python -m demucs.separate -n htdemucs --two-stems=vocals "{args.audio}" -o temp_outputs --device "{args.device}"'
+        f'python -m demucs.separate -n htdemucs --two-stems=vocals "{args.audio}" -o "{temp_outputs_dir}" --device "{args.device}"'
     )
 
     if return_code != 0:
@@ -125,7 +127,7 @@ if args.stemming:
         vocal_target = args.audio
     else:
         vocal_target = os.path.join(
-            "temp_outputs",
+            temp_outputs_dir,
             "htdemucs",
             os.path.splitext(os.path.basename(args.audio))[0],
             "vocals.wav",
@@ -153,15 +155,14 @@ suppress_tokens = (
 
 if args.batch_size > 0:
     transcript_segments, info = whisper_pipeline.transcribe(
-        audio_waveform,
+        audio_waveform, # type: ignore
         language,
         suppress_tokens=suppress_tokens,
         batch_size=args.batch_size,
-        task=args.task,
     )
 else:
     transcript_segments, info = whisper_model.transcribe(
-        audio_waveform,
+        audio_waveform, # type: ignore
         language,
         suppress_tokens=suppress_tokens,
         vad_filter=True,
@@ -173,6 +174,7 @@ full_transcript = "".join(segment.text for segment in transcript_segments)
 # clear gpu vram
 del whisper_model, whisper_pipeline
 torch.cuda.empty_cache()
+# gc.collect()
 
 # Forced Alignment
 alignment_model, alignment_tokenizer = load_alignment_model(
@@ -190,6 +192,7 @@ emissions, stride = generate_emissions(
 
 del alignment_model
 torch.cuda.empty_cache()
+# gc.collect()
 
 tokens_starred, text_starred = preprocess_text(
     full_transcript,
@@ -207,37 +210,14 @@ spans = get_spans(tokens_starred, segments, blank_token)
 
 word_timestamps = postprocess_results(text_starred, spans, stride, scores)
 
+if args.diarizer == "msdd":
+    from diarization import MSDDDiarizer
 
-# convert audio to mono for NeMo combatibility
-ROOT = os.getcwd()
-temp_path = os.path.join(ROOT, "temp_outputs")
-os.makedirs(temp_path, exist_ok=True)
-torchaudio.save(
-    os.path.join(temp_path, "mono_file.wav"),
-    torch.from_numpy(audio_waveform).unsqueeze(0).float(),
-    16000,
-    channels_first=True,
-)
+    diarizer_model = MSDDDiarizer(device=args.device)
 
-
-# Initialize NeMo MSDD diarization model
-msdd_model = NeuralDiarizer(cfg=create_config(temp_path)).to(args.device)
-msdd_model.diarize()
-
-del msdd_model
+speaker_ts = diarizer_model.diarize(torch.from_numpy(audio_waveform).unsqueeze(0))
+del diarizer_model
 torch.cuda.empty_cache()
-
-# Reading timestamps <> Speaker Labels mapping
-
-
-speaker_ts = []
-with open(os.path.join(temp_path, "pred_rttms", "mono_file.rttm"), "r") as f:
-    lines = f.readlines()
-    for line in lines:
-        line_list = line.split(" ")
-        s = int(float(line_list[5]) * 1000)
-        e = s + int(float(line_list[8]) * 1000)
-        speaker_ts.append([s, e, int(line_list[11].split("_")[-1])])
 
 wsm = get_words_speaker_mapping(word_timestamps, speaker_ts, "start")
 
@@ -286,4 +266,4 @@ with open(os.path.join(args.directory, f"{base_name}.txt"), "w", encoding="utf-8
 with open(os.path.join(args.directory, f"{base_name}.str"), "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
 
-cleanup(temp_path)
+cleanup(temp_outputs_dir)

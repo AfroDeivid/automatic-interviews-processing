@@ -1,0 +1,68 @@
+[project]
+name = "automatic-interviews-processing"
+version = "2.0.0"
+description = "Transcription with speaker diarization for audio interviews, plus evaluation and text/topic analysis."
+authors = [
+    {name = "AfroDeivid",email = "92383275+AfroDeivid@users.noreply.github.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "wget>=3.2,<4",
+    "nemo-toolkit[asr]>=2.3.0",
+    "nltk>=3.9.1,<4",
+    "faster-whisper>=1.1.0",
+    "demucs",
+    "deepmultilingualpunctuation",
+    "ctc-forced-aligner",
+    "ipykernel>=6.29.5,<7",
+    "pandas>=2.2.3,<3",
+    "pydub>=0.25.1,<0.26",
+    "numpy<2",
+    "indic-numtowords",
+    "psutil>=7.0.0,<8",
+]
+
+[project.optional-dependencies]
+# Evaluation, text analysis and topic modelling notebooks (notebooks/)
+analysis = [
+    "matplotlib",
+    "seaborn",
+    "plotly",
+    "wordcloud",
+    "networkx",
+    "beautifulsoup4",
+    "spacy",
+    "en-core-web-sm",
+    "bertopic",
+    "nbformat",
+    "streamlit",
+]
+
+[project.scripts]
+interviews-transcribe = "interviews_processing.run_diarize:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.uv.sources]
+demucs = { git = "https://github.com/MahmoudAshraf97/demucs.git" }
+deepmultilingualpunctuation = { git = "https://github.com/oliverguhr/deepmultilingualpunctuation.git" }
+ctc-forced-aligner = { git = "https://github.com/MahmoudAshraf97/ctc-forced-aligner.git" }
+indic-numtowords = { git = "https://github.com/AI4Bharat/indic-numtowords.git" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["interviews_processing"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: end-to-end run that downloads and runs the real models"]
+addopts = "-m 'not slow'"

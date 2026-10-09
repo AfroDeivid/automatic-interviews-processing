@@ -24,15 +24,16 @@
 # Installation files
 !requirements.txt
 !constraints.txt
-!freeze_requirements.txt
 
 # gitkeep
-!src/images/readme/WD_pipeline.png
+!images/WD_pipeline.png
 !/data/eg_audio_file.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-temp_outputs/
+temp_outputs*/
+.venv/
+.pytest_cache/
 #launch.json folder
 .vscode/
 #Cache folder

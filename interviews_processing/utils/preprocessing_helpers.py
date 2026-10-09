@@ -530,21 +530,40 @@ def match_transcripts(reference_df, target_df):
         s, ms = s_ms.split(",")
         total_ms = (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms)
         return total_ms
+    
+    def check_and_fix_intervals(df, label):
+        # Find invalid rows
+        invalid_rows = df[df['Start_ms'] > df['End_ms']].copy()
+        
+        if not invalid_rows.empty:
+            print(f"\n⚠️ Found invalid intervals in {label}:")
+            print(invalid_rows[['Start Time', 'End Time', 'Start_ms', 'End_ms']])
+            
+            # Option 1: Swap Start_ms and End_ms where needed
+            df.loc[df['Start_ms'] > df['End_ms'], ['Start_ms', 'End_ms']] = \
+                df.loc[df['Start_ms'] > df['End_ms'], ['End_ms', 'Start_ms']].values
+            
+            print(f"✅ Fixed by swapping Start_ms and End_ms in {label}.")
+
+        return df
 
     # Convert timestamps to milliseconds
     reference_df['Start_ms'] = reference_df['Start Time'].apply(time_to_ms)
     reference_df['End_ms'] = reference_df['End Time'].apply(time_to_ms)
     target_df['Start_ms'] = target_df['Start Time'].apply(time_to_ms)
     target_df['End_ms'] = target_df['End Time'].apply(time_to_ms)
-
     
+    # Check & fix bad intervals BEFORE building IntervalIndex
+    reference_df = check_and_fix_intervals(reference_df, "reference_df")
+    target_df = check_and_fix_intervals(target_df, "target_df")
+    
+    # Now safe to build intervals
     ref_intervals = pd.IntervalIndex.from_arrays(reference_df['Start_ms'], reference_df['End_ms'], closed='both')    
-
     ref_df_intervals = reference_df[['Start_ms', 'End_ms']].copy()
     ref_df_intervals['ref_index'] = ref_df_intervals.index
     tar_df_intervals = target_df[['Start_ms', 'End_ms']].copy()
     tar_df_intervals['tar_index'] = tar_df_intervals.index
-
+    
     # Build a dataframe of overlaps
     overlaps = []
     for idx, row in tar_df_intervals.iterrows():
@@ -587,17 +606,19 @@ def match_transcripts(reference_df, target_df):
 
     # Prepare the target content list aligned with reference_df
     target_content_list = [None] * len(reference_df)
-
+    
     for ref_idx, group in grouped:
         # Get the sorted target contents
         group_sorted = group.sort_values('Start_ms')
+        group_sorted['Content'] = group_sorted['Content'].fillna('').astype(str)
         speakers = group_sorted['Speaker'].unique()
+
         if len(speakers) > 1:
             # Annotate speakers
             speaker_contents = group_sorted.groupby('Speaker')['Content'].apply(' '.join)
             target_content_str = ' '.join(f'Speaker {sp}: {cnt}' for sp, cnt in speaker_contents.items())
         else:
-            # Single speaker
+            # Single speaker case
             target_content_str = ' '.join(group_sorted['Content'])
         target_content_list[int(ref_idx)] = target_content_str
 
@@ -648,3 +669,58 @@ def match_transcripts_folder(reference_dir, target_dir, output_dir):
                     df_ref.to_csv(output_file_path, index=False, encoding='utf-8-sig')
                 else:
                     print(f"Matching file not found for {reference_file_path}")
+
+def extract_part_number(filename):
+    match = re.search(r'part\s*(\d+)', filename, re.IGNORECASE)
+    return int(match.group(1)) if match else float('inf')
+
+def merge_csv_parts_and_copy_others(source_dir, output_dir):
+    """
+    Merges 'part' CSV files per subdirectory into one file.
+    Copies all other CSVs (e.g., follow-ups) to the same output directory.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    for subdir in sorted(os.listdir(source_dir)):
+        subdir_path = os.path.join(source_dir, subdir)
+        if not os.path.isdir(subdir_path):
+            continue
+
+        sub_output_dir = os.path.join(output_dir, subdir)
+        os.makedirs(sub_output_dir, exist_ok=True)
+
+        print(f"📂 Processing: {subdir}")
+        all_csvs = [f for f in os.listdir(subdir_path) if f.lower().endswith('.csv')]
+        part_csvs = [f for f in all_csvs if 'part' in f.lower()]
+        other_csvs = [f for f in all_csvs if 'part' not in f.lower()]
+
+        # Merge 'part' files
+        if part_csvs:
+            part_csvs.sort(key=extract_part_number)
+            print("    Merging files:")
+            for f in part_csvs:
+                print(f"      - {f}")
+            try:
+                csv_paths = [os.path.join(subdir_path, f) for f in part_csvs]
+                df_list = [pd.read_csv(path) for path in csv_paths]
+                merged_df = pd.concat(df_list, ignore_index=True)
+                merged_filename = f"{subdir}_interview_merged.csv"
+
+                os.makedirs(sub_output_dir, exist_ok=True)
+                merged_path = os.path.join(sub_output_dir, merged_filename)
+
+                merged_df.to_csv(merged_path, index=False)
+                print(f"   ✅ Saved merged file: {merged_filename}")
+            except Exception as e:
+                print(f"   ❌ Error merging parts: {e}")
+
+        else:
+            print("   ⚠️ No 'part' files to merge.")
+
+        # Copy non-'part' CSVs
+        if other_csvs:
+            for f in other_csvs:
+                src_path = os.path.join(subdir_path, f)
+                dst_path = os.path.join(sub_output_dir, f)
+                shutil.copy(src_path, dst_path)
+                print(f"      Copied: {f} → {os.path.basename(dst_path)}")
+        print()

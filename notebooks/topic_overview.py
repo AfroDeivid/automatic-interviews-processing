@@ -22,7 +22,7 @@ def load_data(file):
     return df
 
 # Default file path
-default_file_path = "./src/outputs/topics/df_topic.csv"
+default_file_path = "./notebooks/outputs/topics/df_topic.csv"
 
 
 # File uploader
